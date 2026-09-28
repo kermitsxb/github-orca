@@ -1,6 +1,8 @@
 import { build } from 'esbuild';
 
-const extensionEntries = {};
+const extensionEntries = {
+  background: 'extension/src/background/index.ts',
+};
 
 await Promise.all([
   build({

@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "GitHub → Orca",
+  "version": "0.1.0",
+  "description": "Open a GitHub pull request in an Orca workspace, with an agent.",
+  "permissions": [
+    "nativeMessaging",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "dist/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://github.com/*"
+      ],
+      "js": [
+        "dist/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "options.html",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu48RlikE7Xg25VVNgY5XtPbdwQ4TifY50DDxJ4AqUNpJdTGeRaUcuBxVZw5vcQqbMlAF2qj5pgN5fDMXg3OgIoM/FbZ6DM9v5y8PaM+YPCJjANpCwafL185utxzPe1A1LMSitTYgO6jFOdPKeP8O6UYDSMViSPvs3B0XGJCaff/7Uh9/Eo0KRrIZiWgCRIVZb9aN28CG6JGApgn+eeHWN5rzArqKgykvtvnOyIEeCO9MaS19hVtNwg47MHTnNHHiP6TOT1ilfqZ0lTlmMLaHLkMLJWjPP9jJreVodZVBxBy3Qim+Y5bPU2wakLLCctnHMLCoG6tOvMkY+QhpcHyKcQIDAQAB"
+}
