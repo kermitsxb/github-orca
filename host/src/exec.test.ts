@@ -9,7 +9,7 @@ describe('CommandError', () => {
 
   it('falls back to the underlying error message when both outputs are empty', () => {
     expect(new CommandError('gh', '', '', false, 'spawn gh ENOENT').message).toBe('gh: spawn gh ENOENT');
-    expect(new CommandError('gh', '', '', false).message).toBe('gh: échec');
+    expect(new CommandError('gh', '', '', false).message).toBe('gh: failed');
   });
 });
 

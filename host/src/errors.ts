@@ -15,7 +15,7 @@ export class HostError extends Error {
 export function toHostError(e: unknown, code: ErrorCode): HostError {
   if (e instanceof HostError) return e;
   if (e instanceof CommandError) {
-    if (e.timedOut) return new HostError('timeout', `Délai dépassé : ${e.cmd}`);
+    if (e.timedOut) return new HostError('timeout', `Timed out: ${e.cmd}`);
     try {
       const parsed = JSON.parse(e.stdout) as { error?: { message?: string } };
       if (parsed.error?.message) return new HostError(code, parsed.error.message);

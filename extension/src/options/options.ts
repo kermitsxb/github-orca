@@ -5,7 +5,7 @@ const root = document.getElementById('form')!;
 const status = document.getElementById('status')!;
 const save = document.getElementById('save') as HTMLButtonElement;
 
-const errorText = (e: unknown) => `Erreur : ${e instanceof Error ? e.message : String(e)}`;
+const errorText = (e: unknown) => `Error: ${e instanceof Error ? e.message : String(e)}`;
 
 // Saving before the stored settings are rendered would overwrite them with an empty form.
 save.disabled = true;
@@ -31,6 +31,6 @@ save.addEventListener('click', async () => {
     return;
   }
   renderOptions(root, settings);
-  status.textContent = 'Enregistré ✅';
+  status.textContent = 'Saved ✅';
   setTimeout(() => (status.textContent = ''), 2000);
 });

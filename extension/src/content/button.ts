@@ -32,7 +32,7 @@ type ToastState = 'busy' | 'ok' | 'warning' | 'error';
 function createToast(doc: Document): (text: string, state: ToastState) => void {
   const toast = el(doc, 'div', { className: 'gho-toast', hidden: true }, { role: 'status' });
   const toastText = el(doc, 'span', { className: 'gho-toast-text' });
-  const toastClose = el(doc, 'button', { type: 'button', className: 'gho-toast-close', textContent: '×' }, { 'aria-label': 'Fermer' });
+  const toastClose = el(doc, 'button', { type: 'button', className: 'gho-toast-close', textContent: '×' }, { 'aria-label': 'Close' });
   toast.append(toastText, toastClose);
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
   const hideToast = () => {
@@ -63,7 +63,7 @@ export function createOrcaButton(key: string, send: Send, doc: Document = docume
   const root = el(doc, 'div', { className: 'gho-root' }, { 'data-github-orca': key });
   const main = el(doc, 'button', { type: 'button', className: 'gho-main', textContent: ACTION_LABELS.review });
   const toggle = el(doc, 'button', { type: 'button', className: 'gho-toggle', textContent: '▾' }, {
-    'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-label': 'Autres actions Orca',
+    'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-label': 'More Orca actions',
   });
   const group = el(doc, 'div', { className: 'gho-group' });
   group.append(main, toggle);
@@ -74,7 +74,7 @@ export function createOrcaButton(key: string, send: Send, doc: Document = docume
   );
   const custom = el(doc, 'form', { className: 'gho-custom' });
   const textarea = el(doc, 'textarea', { rows: 3, placeholder: ACTION_LABELS.custom });
-  const submit = el(doc, 'button', { type: 'submit', textContent: 'Lancer' });
+  const submit = el(doc, 'button', { type: 'submit', textContent: 'Run' });
   custom.append(textarea, submit);
   menu.append(...items, custom);
 
@@ -94,10 +94,10 @@ export function createOrcaButton(key: string, send: Send, doc: Document = docume
     busy = true;
     setMenu(false);
     controls.forEach((c) => (c.disabled = true));
-    showStatus('⏳ Lancement dans Orca…', 'busy');
+    showStatus('⏳ Starting in Orca…', 'busy');
     const res = await sendSafely(() => send(action, customPrompt));
-    if (res.ok && res.warning) showStatus(`⚠️ ${res.worktreeName} (réutilisé) — ${res.warning}`, 'warning');
-    else if (res.ok) showStatus(`✅ ${res.worktreeName}${res.reused ? ' (réutilisé)' : ''}`, 'ok');
+    if (res.ok && res.warning) showStatus(`⚠️ ${res.worktreeName} (reused) — ${res.warning}`, 'warning');
+    else if (res.ok) showStatus(`✅ ${res.worktreeName}${res.reused ? ' (reused)' : ''}`, 'ok');
     else showStatus(`❌ ${res.message}`, 'error');
     controls.forEach((c) => (c.disabled = false));
     busy = false;
@@ -130,10 +130,10 @@ export function createCloneButton(key: string, send: () => Promise<HostResponse>
   button.addEventListener('click', async () => {
     if (button.disabled) return;
     button.disabled = true;
-    showStatus(`⏳ Clonage de ${key} dans Orca…`, 'busy');
+    showStatus(`⏳ Cloning ${key} into Orca…`, 'busy');
     const res = await sendSafely(send);
-    if (res.ok && res.reused) showStatus(`ℹ️ ${res.worktreeName} est déjà dans Orca (${res.worktreePath})`, 'ok');
-    else if (res.ok) showStatus(`✅ ${res.worktreeName} cloné dans ${res.worktreePath}`, 'ok');
+    if (res.ok && res.reused) showStatus(`ℹ️ ${res.worktreeName} is already in Orca (${res.worktreePath})`, 'ok');
+    else if (res.ok) showStatus(`✅ ${res.worktreeName} cloned into ${res.worktreePath}`, 'ok');
     else showStatus(`❌ ${res.message}`, 'error');
     button.disabled = false;
   });

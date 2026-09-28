@@ -37,18 +37,18 @@ On reuse the workspace is fetched and fast-forwarded to the current PR head firs
 `Clone in Orca` sits before Watch / Fork / Star on the repo home and its `tree/…` / `blob/…` views (not on
 issues, actions, settings…). It runs `orca project setup-clone` with the SSH URL
 `git@github.com:<owner>/<repo>.git` into `<clone folder>/<repo>`, then Orca lists the project.
-If the repo is already in Orca, nothing is cloned and the toast shows its path (“déjà dans Orca”).
+If the repo is already in Orca, nothing is cloned and the toast shows its path (“is already in Orca”).
 
 ## Options
 
 Extension options (`chrome://extensions` → GitHub → Orca → *Details* → *Extension options*):
 
 - **Agent**: the `--agent` command passed to Orca (`claude` by default).
-- **Dossier de clonage**: parent folder for `Clone in Orca`, absolute or `~/…` (default `~/orca-projects`,
+- **Clone folder**: parent folder for `Clone in Orca`, absolute or `~/…` (default `~/orca-projects`,
   created if missing).
 - **Prompts**, global and per repo. Variables: `{pr_url} {pr_number} {pr_title} {owner} {repo} {head_ref} {base_ref}`.
 
-## Sécurité
+## Security
 
 Review / Checkout / Custom run an agent — and, for PRs from the same repo, the repo's Orca setup hooks —
 inside the PR's code. Fork PRs are created with `--setup skip` (no setup hooks). Only use the button on PRs
@@ -58,10 +58,10 @@ Clone in Orca only clones and registers the repo: it creates no worktree and sta
 
 ## Troubleshooting
 
-- “Host non installé” → run `./scripts/install.sh`, then reload the extension.
-- “Host refusé” → the loaded extension ID differs from `extension/extension-id.txt`.
+- “Host not installed” → run `./scripts/install.sh`, then reload the extension.
+- “Host refused” → the loaded extension ID differs from `extension/extension-id.txt`.
 - Host log: `~/Library/Logs/github-orca/host.log`.
-- “Le host natif s'est arrêté” → read the host log, or re-run `./scripts/install.sh`.
+- “The native host stopped” → read the host log, or re-run `./scripts/install.sh`.
 - `git fetch` fails with a credentials error → the host is started by the browser and does not inherit
   variables exported only in `.zshrc` (e.g. `SSH_AUTH_SOCK`); git also runs with `GIT_TERMINAL_PROMPT=0`.
   Use an https remote (with `gh auth setup-git`) or an ssh-agent available to launchd.
@@ -75,7 +75,7 @@ Clone in Orca only clones and registers the repo: it creates no worktree and sta
 
 - [ ] Button appears on a PR, once, and follows navigation PR → PR → issues list.
 - [ ] Review on an open PR → Orca shows the new workspace, agent receives the prompt, board status In review.
-- [ ] Review again → “(réutilisé)”, a new agent tab in the same workspace.
+- [ ] Review again → “(reused)”, a new agent tab in the same workspace.
 - [ ] Checkout only → workspace without agent; HEAD equals the PR head SHA.
 - [ ] Continue work → upstream is `origin/<head_ref>`.
 - [ ] Custom prompt → the agent receives the typed text.
@@ -85,12 +85,12 @@ Clone in Orca only clones and registers the repo: it creates no worktree and sta
 - [ ] Address comments after Continue work → reuses the `(branch)` workspace; the agent can push.
 - [ ] Review again after a new commit on the PR → the reused workspace is fast-forwarded; with local changes → ⚠️ warning, agent still starts.
 - [ ] Remove a Review workspace in Orca (`orca worktree rm`), click Review again → a new workspace at the current PR head (Orca keeps the old branch: check what it does).
-- [ ] Merged PR → Review shows “PR mergée : seul Checkout only est possible”.
-- [ ] Repo not in Orca → “n'est pas dans Orca”.
+- [ ] Merged PR → Review shows “PR merged: only Checkout only is available”.
+- [ ] Repo not in Orca → “is not in Orca”.
 - [ ] Orca quit → it starts, then the workspace opens.
 - [ ] Repo page (home, `tree/`, `blob/`) → one `Clone in Orca` button before Watch/Fork/Star; none on issues, actions, settings.
-- [ ] Clone in Orca on a repo not in Orca → cloné dans `~/orca-projects/<repo>` (folder created), project visible in Orca.
-- [ ] Clone in Orca again → “déjà dans Orca”, nothing cloned.
+- [ ] Clone in Orca on a repo not in Orca → cloned into `~/orca-projects/<repo>` (folder created), project visible in Orca.
+- [ ] Clone in Orca again → “is already in Orca”, nothing cloned.
 
 ## License
 

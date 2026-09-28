@@ -43,20 +43,20 @@ describe('createOrcaButton', () => {
   it('marks a reused workspace', async () => {
     const { q } = mount(vi.fn<Send>().mockResolvedValue({ ...ok, reused: true }));
     q<HTMLButtonElement>('.gho-main').click();
-    await vi.waitFor(() => expect(toastText()).toContain('réutilisé'));
+    await vi.waitFor(() => expect(toastText()).toContain('reused'));
   });
 
   it('shows the stale-workspace warning on a reused workspace', async () => {
-    const { q } = mount(vi.fn<Send>().mockResolvedValue({ ...ok, reused: true, warning: 'Workspace non mis à jour' }));
+    const { q } = mount(vi.fn<Send>().mockResolvedValue({ ...ok, reused: true, warning: 'Workspace not updated' }));
     q<HTMLButtonElement>('.gho-main').click();
-    await vi.waitFor(() => expect(toastText()).toBe('⚠️ PR #3 Fix (réutilisé) — Workspace non mis à jour'));
+    await vi.waitFor(() => expect(toastText()).toBe('⚠️ PR #3 Fix (reused) — Workspace not updated'));
     expect(toast()!.dataset.state).toBe('warning');
   });
 
   it('explains a reloaded extension when the send rejects', async () => {
     const { q } = mount(vi.fn<Send>().mockRejectedValue(new Error('Extension context invalidated.')));
     q<HTMLButtonElement>('.gho-main').click();
-    await vi.waitFor(() => expect(toastText()).toBe('❌ Extension rechargée : recharge la page'));
+    await vi.waitFor(() => expect(toastText()).toBe('❌ Extension reloaded: reload the page'));
   });
 
   it('ignores clicks while a request is pending', async () => {
@@ -73,13 +73,13 @@ describe('createOrcaButton', () => {
 
   it('shows host errors and rejected sends', async () => {
     const send = vi.fn<Send>()
-      .mockResolvedValueOnce({ ok: false, code: 'unknown_repo', message: "a/b n'est pas dans Orca" })
+      .mockResolvedValueOnce({ ok: false, code: 'unknown_repo', message: 'a/b is not in Orca' })
       .mockRejectedValueOnce(new Error('Extension context invalidated.'));
     const { q } = mount(send);
     q<HTMLButtonElement>('.gho-main').click();
-    await vi.waitFor(() => expect(toastText()).toBe("❌ a/b n'est pas dans Orca"));
+    await vi.waitFor(() => expect(toastText()).toBe('❌ a/b is not in Orca'));
     q<HTMLButtonElement>('.gho-main').click();
-    await vi.waitFor(() => expect(toastText()).toContain('Extension rechargée'));
+    await vi.waitFor(() => expect(toastText()).toContain('Extension reloaded'));
   });
 
   it('toggles the menu and runs a menu action', async () => {
@@ -143,7 +143,7 @@ describe('createOrcaButton', () => {
 
   it('keeps an error toast until it is closed', async () => {
     vi.useFakeTimers();
-    const { q } = mount(vi.fn<Send>().mockResolvedValue({ ok: false, code: 'orca_unavailable', message: 'Orca ne répond pas' }));
+    const { q } = mount(vi.fn<Send>().mockResolvedValue({ ok: false, code: 'orca_unavailable', message: 'Orca is not responding' }));
     q<HTMLButtonElement>('.gho-main').click();
     await vi.advanceTimersByTimeAsync(10_000);
     expect(toast()!.hidden).toBe(false);
@@ -156,14 +156,14 @@ describe('createOrcaButton', () => {
     vi.useFakeTimers();
     const send = vi.fn<Send>()
       .mockResolvedValueOnce(ok)
-      .mockResolvedValueOnce({ ok: false, code: 'gh_failed', message: 'gh: échec' });
+      .mockResolvedValueOnce({ ok: false, code: 'gh_failed', message: 'gh: failed' });
     const { q } = mount(send);
     q<HTMLButtonElement>('.gho-main').click();
     await vi.advanceTimersByTimeAsync(1000);
     q<HTMLButtonElement>('.gho-main').click();
     await vi.advanceTimersByTimeAsync(10_000);
     expect(toast()!.hidden).toBe(false);
-    expect(toastText()).toBe('❌ gh: échec');
+    expect(toastText()).toBe('❌ gh: failed');
   });
 });
 
@@ -190,14 +190,14 @@ describe('createCloneButton', () => {
     button.click();
     expect(send).toHaveBeenCalledTimes(1);
     expect(button.disabled).toBe(true);
-    await vi.waitFor(() => expect(toastText()).toBe('✅ a/b cloné dans /Users/me/orca-projects/b'));
+    await vi.waitFor(() => expect(toastText()).toBe('✅ a/b cloned into /Users/me/orca-projects/b'));
     expect(button.disabled).toBe(false);
   });
 
   it('says when the repo is already in Orca', async () => {
     const { button } = mountClone(vi.fn().mockResolvedValue({ ...cloned, worktreePath: '/src/b', reused: true }));
     button.click();
-    await vi.waitFor(() => expect(toastText()).toBe('ℹ️ a/b est déjà dans Orca (/src/b)'));
+    await vi.waitFor(() => expect(toastText()).toBe('ℹ️ a/b is already in Orca (/src/b)'));
   });
 
   it('shows host errors and rejected sends', async () => {
@@ -206,6 +206,6 @@ describe('createCloneButton', () => {
     await vi.waitFor(() => expect(toastText()).toBe('❌ boom'));
     const second = mountClone(vi.fn().mockRejectedValue(new Error('Extension context invalidated.')));
     second.button.click();
-    await vi.waitFor(() => expect(toastText()).toContain('Extension rechargée'));
+    await vi.waitFor(() => expect(toastText()).toContain('Extension reloaded'));
   });
 });

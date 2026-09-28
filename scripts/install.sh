@@ -7,9 +7,9 @@ HOST_NAME="com.stocki.github_orca"
 cd "$ROOT"
 
 for tool in node orca gh git; do
-  command -v "$tool" >/dev/null || { echo "Introuvable dans le PATH : $tool" >&2; exit 1; }
+  command -v "$tool" >/dev/null || { echo "Not found in PATH: $tool" >&2; exit 1; }
 done
-[ -f extension/extension-id.txt ] || { echo "Lance d'abord : npm run gen-key" >&2; exit 1; }
+[ -f extension/extension-id.txt ] || { echo "Run first: npm run gen-key" >&2; exit 1; }
 
 npm run build
 
@@ -42,9 +42,9 @@ for browser_dir in \
   if [ -d "$browser_dir" ]; then
     mkdir -p "$browser_dir/NativeMessagingHosts"
     printf '%s\n' "$MANIFEST" > "$browser_dir/NativeMessagingHosts/$HOST_NAME.json"
-    echo "Installé : $browser_dir/NativeMessagingHosts/$HOST_NAME.json"
+    echo "Installed: $browser_dir/NativeMessagingHosts/$HOST_NAME.json"
     installed=1
   fi
 done
-[ "$installed" = 1 ] || { echo "Ni Chrome ni Arc trouvés" >&2; exit 1; }
-echo "Extension ID attendu : $EXT_ID"
+[ "$installed" = 1 ] || { echo "Neither Chrome nor Arc found" >&2; exit 1; }
+echo "Expected extension ID: $EXT_ID"

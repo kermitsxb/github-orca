@@ -18,30 +18,30 @@ function isName(v: unknown): v is string {
 
 /** Absolute path, or `~` / `~/…` expanded against `home`; normalized (no `.`, `..`, trailing slash). */
 function parseDestination(v: unknown, home: string): string {
-  if (typeof v !== 'string' || v.length > MAX_PATH || /[\x00-\x1f\x7f]/.test(v)) fail('Dossier de clonage invalide');
+  if (typeof v !== 'string' || v.length > MAX_PATH || /[\x00-\x1f\x7f]/.test(v)) fail('Invalid clone folder');
   if (v === '~' || v.startsWith('~/')) return resolve(home, `.${v.slice(1)}`);
-  if (!v.startsWith('/')) fail('Dossier de clonage invalide : chemin absolu ou ~/… attendu');
+  if (!v.startsWith('/')) fail('Invalid clone folder: expected an absolute path or ~/…');
   return resolve(v);
 }
 
 export function parseRequest(raw: unknown, home: string = homedir()): HostMessage {
-  if (typeof raw !== 'object' || raw === null) fail('Requête invalide : objet attendu');
+  if (typeof raw !== 'object' || raw === null) fail('Invalid request: object expected');
   const r = raw as Record<string, unknown>;
-  if (r.action !== 'clone' && !ACTIONS.includes(r.action as Action)) fail(`Action inconnue : ${String(r.action)}`);
-  if (!isName(r.owner)) fail('Propriétaire (owner) invalide');
-  if (!isName(r.repo)) fail('Dépôt (repo) invalide');
+  if (r.action !== 'clone' && !ACTIONS.includes(r.action as Action)) fail(`Unknown action: ${String(r.action)}`);
+  if (!isName(r.owner)) fail('Invalid owner');
+  if (!isName(r.repo)) fail('Invalid repo');
   if (r.action === 'clone') {
     const clone: CloneRequest = { action: 'clone', owner: r.owner, repo: r.repo, destination: parseDestination(r.destination, home) };
     return clone;
   }
-  if (typeof r.prNumber !== 'number' || !Number.isInteger(r.prNumber) || r.prNumber <= 0) fail('Numéro de PR invalide');
-  if (typeof r.agent !== 'string' || !AGENT.test(r.agent)) fail('Agent invalide');
+  if (typeof r.prNumber !== 'number' || !Number.isInteger(r.prNumber) || r.prNumber <= 0) fail('Invalid PR number');
+  if (typeof r.agent !== 'string' || !AGENT.test(r.agent)) fail('Invalid agent');
 
   const action = r.action as Action;
   const req: HostRequest = { action, owner: r.owner, repo: r.repo, prNumber: r.prNumber, agent: r.agent };
   if (action !== 'checkout') {
-    if (typeof r.template !== 'string' || r.template.trim() === '') fail('Prompt vide');
-    if (r.template.length > MAX_TEMPLATE) fail('Prompt trop long');
+    if (typeof r.template !== 'string' || r.template.trim() === '') fail('Empty prompt');
+    if (r.template.length > MAX_TEMPLATE) fail('Prompt too long');
     req.template = r.template;
   }
   return req;

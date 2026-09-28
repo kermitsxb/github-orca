@@ -51,7 +51,7 @@ describe('validateSettings', () => {
 
   it('rejects an agent the host would refuse', () => {
     for (const agent of ['', 'Claude', 'claude --yolo', 'a'.repeat(41), 'x;rm']) {
-      expect(validateSettings({ ...DEFAULT_SETTINGS, agent })).toBe('Agent invalide');
+      expect(validateSettings({ ...DEFAULT_SETTINGS, agent })).toBe('Invalid agent');
     }
   });
 });
@@ -65,7 +65,7 @@ describe('validateSettings — cloneDir', () => {
 
   it('rejects a folder the host would refuse', () => {
     for (const cloneDir of ['src', '~bob/src', './x']) {
-      expect(validateSettings({ ...DEFAULT_SETTINGS, cloneDir })).toMatch(/Dossier de clonage/);
+      expect(validateSettings({ ...DEFAULT_SETTINGS, cloneDir })).toMatch(/Invalid clone folder/);
     }
   });
 });

@@ -31,7 +31,7 @@ export function cloneInFlightKey(msg: Pick<CloneRepoMessage, 'owner' | 'repo'>):
 
 export function buildHostRequest(msg: RunActionMessage, s: Settings): HostRequest | HostResponse {
   const template = resolveTemplate(s, msg.action, msg.owner, msg.repo, msg.customPrompt);
-  if (msg.action !== 'checkout' && !template) return { ok: false, code: 'invalid_request', message: 'Prompt vide' };
+  if (msg.action !== 'checkout' && !template) return { ok: false, code: 'invalid_request', message: 'Empty prompt' };
   const req: HostRequest = { action: msg.action, owner: msg.owner, repo: msg.repo, prNumber: msg.prNumber, agent: s.agent };
   if (template) req.template = template;
   return req;

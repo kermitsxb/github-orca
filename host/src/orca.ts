@@ -10,9 +10,9 @@ export function parseOrcaJson(stdout: string): Json {
   try {
     data = JSON.parse(stdout);
   } catch {
-    throw new HostError('orca_failed', `Sortie orca inattendue : ${stdout.slice(0, 200)}`);
+    throw new HostError('orca_failed', `Unexpected orca output: ${stdout.slice(0, 200)}`);
   }
-  if (data.ok !== true) throw new HostError('orca_failed', data.error?.message ?? 'orca a renvoyé ok=false');
+  if (data.ok !== true) throw new HostError('orca_failed', data.error?.message ?? 'orca returned ok=false');
   return data.result ?? {};
 }
 
@@ -100,7 +100,7 @@ export class OrcaCli implements OrcaApi {
   async startAgent(worktreeId: string, agent: string, prompt: string): Promise<void> {
     const created = await this.call(['terminal', 'create', '--worktree', `id:${worktreeId}`, '--command', agent, '--focus']);
     const handle = pickHandle(created);
-    if (!handle) throw new HostError('orca_failed', 'Orca n\'a pas renvoyé de terminal');
+    if (!handle) throw new HostError('orca_failed', 'Orca returned no terminal');
     await this.call(['terminal', 'wait', '--terminal', handle, '--for', 'tui-idle', '--timeout-ms', '60000'], 70_000);
     await this.call(['terminal', 'send', '--terminal', handle, '--text', prompt, '--enter']);
   }
@@ -114,7 +114,7 @@ export class OrcaCli implements OrcaApi {
     try {
       await this.makeDir(o.destination);
     } catch (e) {
-      throw new HostError('orca_failed', `Impossible de créer ${o.destination} : ${e instanceof Error ? e.message : String(e)}`);
+      throw new HostError('orca_failed', `Cannot create ${o.destination}: ${e instanceof Error ? e.message : String(e)}`);
     }
     const result = await this.call(
       ['project', 'setup-clone', '--project', o.projectId, '--host', 'local', '--url', o.url, '--destination', o.destination],

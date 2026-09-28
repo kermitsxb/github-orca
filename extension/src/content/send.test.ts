@@ -16,7 +16,7 @@ describe('createSender', () => {
     const send = createSender(() => undefined, pr);
     const err = await send('review', undefined).catch((e: Error) => e);
     expect(mapNativeError((err as Error).message).ok).toBe(false);
-    expect(mapNativeError((err as Error).message)).toMatchObject({ message: 'Extension rechargée : recharge la page' });
+    expect(mapNativeError((err as Error).message)).toMatchObject({ message: 'Extension reloaded: reload the page' });
   });
 
   it('treats a runtime without id as invalidated too', async () => {
@@ -30,7 +30,7 @@ describe('createSender', () => {
 describe('mapNativeError', () => {
   it('maps the orphaned-script TypeError to the reload hint', () => {
     expect(mapNativeError("Cannot read properties of undefined (reading 'sendMessage')")).toMatchObject({
-      message: 'Extension rechargée : recharge la page',
+      message: 'Extension reloaded: reload the page',
     });
   });
 });

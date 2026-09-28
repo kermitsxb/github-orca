@@ -186,7 +186,7 @@ describe('handleRequest — reuse', () => {
     const res = await handleRequest(review, deps);
     expect(res).toEqual({
       ok: true, worktreeName: 'PR #12 old', worktreePath: '/wt/old', reused: true,
-      warning: "Workspace non mis à jour (modifications locales ou historique divergent) : l'agent travaille sur une version antérieure de la PR",
+      warning: "Workspace not updated (local changes or diverged history): the agent works on an older version of the PR",
     });
     expect(deps.orca.startAgent).toHaveBeenCalled();
     expect(deps.orca.setStatus).toHaveBeenCalledWith('repo::/wt/old', 'in-review');
@@ -244,7 +244,7 @@ describe('handleRequest — errors', () => {
     const deps = makeDeps({ pr: { isCrossRepository: true } });
     for (const action of ['continue', 'address-comments'] as const) {
       expect(await handleRequest({ ...review, action }, deps)).toEqual({
-        ok: false, code: 'fork_unsupported', message: 'Continue work / Address comments indisponibles pour une PR de fork',
+        ok: false, code: 'fork_unsupported', message: 'Continue work / Address comments are not available for a fork PR',
       });
     }
     expect(deps.orca.createWorktree).not.toHaveBeenCalled();
