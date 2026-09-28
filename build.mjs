@@ -2,6 +2,7 @@ import { build } from 'esbuild';
 
 const extensionEntries = {
   background: 'extension/src/background/index.ts',
+  content: 'extension/src/content/index.ts',
 };
 
 await Promise.all([
