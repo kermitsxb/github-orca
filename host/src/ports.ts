@@ -21,6 +21,8 @@ export interface CreateWorktreeOptions {
   comment: string;
   agent?: string;
   prompt?: string;
+  /** 'skip' passes `--setup skip` (fork PRs: do not run the repo's setup hooks). */
+  setup?: 'skip';
 }
 
 export interface OrcaApi {
@@ -40,6 +42,8 @@ export interface GitApi {
   /** Fetches origin/<branch>; returns the base ref `origin/<branch>`. */
   fetchBranch(repoPath: string, branch: string): Promise<string>;
   setUpstream(worktreePath: string, branch: string): Promise<void>;
+  /** `merge --ff-only <ref>` in the worktree: true when done or already up to date, false when git refuses. */
+  fastForward(worktreePath: string, ref: string): Promise<boolean>;
 }
 
 export interface GhApi {

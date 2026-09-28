@@ -55,4 +55,8 @@ describe('DEFAULT_TEMPLATES', () => {
   it('tells the continue agent how to push', () => {
     expect(DEFAULT_TEMPLATES.continue).toContain('git push origin HEAD:{head_ref}');
   });
+
+  it('tells the address-comments agent how to push, as its last sentence', () => {
+    expect(DEFAULT_TEMPLATES['address-comments'].endsWith(' Push with `git push origin HEAD:{head_ref}`.')).toBe(true);
+  });
 });

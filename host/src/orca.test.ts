@@ -72,6 +72,14 @@ describe('OrcaCli.createWorktree', () => {
     await new OrcaCli(run).createWorktree({ projectId: 'github:o/r', base: 'origin/pr/7', name: 'n', comment: 'c' });
     expect(run.calls[0].args).not.toContain('--agent');
     expect(run.calls[0].args).not.toContain('--prompt');
+    expect(run.calls[0].args).not.toContain('--setup');
+  });
+
+  it('passes --setup skip when asked to skip setup hooks', async () => {
+    const run = fakeRunner([['orca worktree create', fixture('orca-worktree-create.json')]]);
+    await new OrcaCli(run).createWorktree({ projectId: 'github:o/r', base: 'origin/pr/7', name: 'n', comment: 'c', setup: 'skip' });
+    const { args } = run.calls[0];
+    expect(args[args.indexOf('--setup') + 1]).toBe('skip');
   });
 
   it('turns an ok:false envelope into orca_failed with orca\'s message', async () => {

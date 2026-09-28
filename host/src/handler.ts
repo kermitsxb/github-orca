@@ -19,17 +19,25 @@ const STATUS: Record<Action, string | null> = {
 
 const MAX_NAME = 80;
 
+export const STALE_WARNING =
+  "Workspace non mis à jour (modifications locales ou historique divergent) : l'agent travaille sur une version antérieure de la PR";
+
+/** Actions that work on the PR's real branch (fetch origin/<headRef>, upstream set, can push). */
+export function isBranchAction(action: Action): boolean {
+  return action === 'continue' || action === 'address-comments';
+}
+
 export function workspaceMarker(req: Pick<HostRequest, 'action' | 'owner' | 'repo' | 'prNumber'>): string {
   const base = `github-orca:${req.owner}/${req.repo}#${req.prNumber}`.toLowerCase();
-  return req.action === 'continue' ? `${base}:branch` : base;
+  return isBranchAction(req.action) ? `${base}:branch` : base;
 }
 
 export function hasMarker(comment: string, marker: string): boolean {
   return comment.toLowerCase().split(/\s+/).includes(marker);
 }
 
-export function worktreeName(prNumber: number, title: string): string {
-  const name = `PR #${prNumber} ${title.replace(/\s+/g, ' ').trim()}`;
+export function worktreeName(prNumber: number, title: string, branch = false): string {
+  const name = `PR #${prNumber} ${branch ? '(branch) ' : ''}${title.replace(/\s+/g, ' ').trim()}`;
   return name.length > MAX_NAME ? `${name.slice(0, MAX_NAME - 1)}…` : name;
 }
 
@@ -44,8 +52,9 @@ async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostRespo
   if (req.action !== 'checkout' && pr.state !== 'OPEN') {
     throw new HostError('pr_not_open', `PR ${pr.state === 'MERGED' ? 'mergée' : 'fermée'} : seul Checkout only est possible`);
   }
-  if (req.action === 'continue' && pr.isCrossRepository) {
-    throw new HostError('fork_unsupported', 'Continue work indisponible pour une PR de fork');
+  const onBranch = isBranchAction(req.action);
+  if (onBranch && pr.isCrossRepository) {
+    throw new HostError('fork_unsupported', 'Continue work / Address comments indisponibles pour une PR de fork');
   }
   const prompt = req.template ? interpolate(req.template, varsFromPr(req.owner, req.repo, pr)) : undefined;
   const status = STATUS[req.action];
@@ -56,28 +65,32 @@ async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostRespo
     throw new HostError('unknown_repo', `${req.owner}/${req.repo} n'est pas dans Orca (orca repo add --path <clone>)`);
   }
 
+  const fetchBase = () =>
+    onBranch ? git.fetchBranch(project.repoPath, pr.headRefName) : git.fetchPrRef(project.repoPath, pr.number);
+
   const marker = workspaceMarker(req);
   const existing = (await orca.listWorktrees()).find((w) => !w.isArchived && hasMarker(w.comment, marker));
   if (existing) {
+    // Bring the workspace up to the current PR head before the agent looks at it.
+    const upToDate = await git.fastForward(existing.path, await fetchBase());
     if (prompt) await orca.startAgent(existing.id, req.agent, prompt);
     else await orca.reveal(existing.id);
     if (status) await orca.setStatus(existing.id, status);
-    return { ok: true, worktreeName: existing.displayName, worktreePath: existing.path, reused: true };
+    const res: HostResponse = { ok: true, worktreeName: existing.displayName, worktreePath: existing.path, reused: true };
+    return upToDate ? res : { ...res, warning: STALE_WARNING };
   }
 
-  const base =
-    req.action === 'continue'
-      ? await git.fetchBranch(project.repoPath, pr.headRefName)
-      : await git.fetchPrRef(project.repoPath, pr.number);
   const wt = await orca.createWorktree({
     projectId: project.projectId,
-    base,
-    name: worktreeName(pr.number, pr.title),
+    base: await fetchBase(),
+    name: worktreeName(pr.number, pr.title, onBranch),
     comment: marker,
     agent: prompt ? req.agent : undefined,
     prompt,
+    // Fork PRs: never run the repo's setup hooks on code from an outside contributor.
+    ...(pr.isCrossRepository ? { setup: 'skip' as const } : {}),
   });
-  if (req.action === 'continue') await git.setUpstream(wt.path, pr.headRefName);
+  if (onBranch) await git.setUpstream(wt.path, pr.headRefName);
   if (status) await orca.setStatus(wt.id, status);
   return { ok: true, worktreeName: wt.displayName, worktreePath: wt.path, reused: false };
 }

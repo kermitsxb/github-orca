@@ -28,7 +28,7 @@ export type ErrorCode =
   | 'internal';
 
 export type HostResponse =
-  | { ok: true; worktreeName: string; worktreePath: string; reused: boolean }
+  | { ok: true; worktreeName: string; worktreePath: string; reused: boolean; warning?: string }
   | { ok: false; code: ErrorCode; message: string };
 
 export interface PrMeta {

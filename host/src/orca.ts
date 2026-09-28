@@ -84,6 +84,7 @@ export class OrcaCli implements OrcaApi {
       'worktree', 'create', '--project', o.projectId, '--host', 'local', '--base-branch', o.base,
       '--name', o.name, '--comment', o.comment, '--no-parent', '--activate',
     ];
+    if (o.setup === 'skip') args.push('--setup', 'skip');
     if (o.agent && o.prompt) args.push('--agent', o.agent, '--prompt', o.prompt);
     return toWorktreeInfo(pickWorktree(await this.call(args, 180_000)));
   }

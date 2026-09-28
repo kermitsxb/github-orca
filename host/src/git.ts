@@ -1,13 +1,16 @@
 import { toHostError } from './errors';
-import type { Runner } from './exec';
+import { CommandError, type Runner } from './exec';
 import type { GitApi } from './ports';
+
+/** Never block on a credentials prompt: the host has no terminal. */
+const GIT_ENV = { GIT_TERMINAL_PROMPT: '0' };
 
 export class GitCli implements GitApi {
   constructor(private readonly run: Runner) {}
 
   private async git(args: string[]): Promise<void> {
     try {
-      await this.run('git', args, { timeoutMs: 60_000 });
+      await this.run('git', args, { timeoutMs: 60_000, env: GIT_ENV });
     } catch (e) {
       throw toHostError(e, 'git_failed');
     }
@@ -25,5 +28,16 @@ export class GitCli implements GitApi {
 
   async setUpstream(worktreePath: string, branch: string): Promise<void> {
     await this.git(['-C', worktreePath, 'branch', `--set-upstream-to=origin/${branch}`]);
+  }
+
+  async fastForward(worktreePath: string, ref: string): Promise<boolean> {
+    try {
+      await this.run('git', ['-C', worktreePath, 'merge', '--ff-only', ref], { timeoutMs: 60_000, env: GIT_ENV });
+      return true;
+    } catch (e) {
+      // A refused merge (dirty tree, diverged history) is not fatal: the caller warns instead.
+      if (e instanceof CommandError && !e.timedOut) return false;
+      throw toHostError(e, 'git_failed');
+    }
   }
 }

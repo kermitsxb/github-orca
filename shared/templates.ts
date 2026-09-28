@@ -6,7 +6,7 @@ export const DEFAULT_TEMPLATES: Record<AgentAction, string> = {
   continue:
     'Continue work on pull request {pr_url} on branch {head_ref}. Read the PR description and existing commits first. Push with `git push origin HEAD:{head_ref}`.',
   'address-comments':
-    'Address the review comments on pull request {pr_url}. Use gh to read them, fix each one, and summarise what changed.',
+    'Address the review comments on pull request {pr_url}. Use gh to read them, fix each one, and summarise what changed. Push with `git push origin HEAD:{head_ref}`.',
 };
 
 export interface TemplateVars {

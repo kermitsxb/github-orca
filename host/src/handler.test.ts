@@ -18,6 +18,7 @@ function makeDeps(overrides: { pr?: Partial<PrMeta>; worktrees?: WorktreeInfo[] 
       fetchPrRef: vi.fn().mockResolvedValue('origin/pr/12'),
       fetchBranch: vi.fn().mockResolvedValue('origin/fix/login'),
       setUpstream: vi.fn().mockResolvedValue(undefined),
+      fastForward: vi.fn().mockResolvedValue(true),
     },
     orca: {
       isReachable: vi.fn().mockResolvedValue(true),
@@ -38,9 +39,11 @@ const existing = (comment: string, isArchived = false): WorktreeInfo => ({
 });
 
 describe('helpers', () => {
-  it('builds lower-cased markers, with a suffix for continue', () => {
+  it('builds lower-cased markers, with a suffix for branch actions (continue, address-comments)', () => {
     expect(workspaceMarker(review)).toBe('github-orca:acme/web-app#12');
+    expect(workspaceMarker({ ...review, action: 'custom' })).toBe('github-orca:acme/web-app#12');
     expect(workspaceMarker({ ...review, action: 'continue' })).toBe('github-orca:acme/web-app#12:branch');
+    expect(workspaceMarker({ ...review, action: 'address-comments' })).toBe('github-orca:acme/web-app#12:branch');
   });
 
   it('matches markers as whole tokens only', () => {
@@ -55,6 +58,14 @@ describe('helpers', () => {
     const long = worktreeName(1, 'x'.repeat(200));
     expect(long.length).toBe(80);
     expect(long.endsWith('…')).toBe(true);
+  });
+
+  it('prefixes branch workspace names with (branch), same bound', () => {
+    expect(worktreeName(12, 'Fix login', true)).toBe('PR #12 (branch) Fix login');
+    expect(worktreeName(12, 'Fix login', false)).toBe('PR #12 Fix login');
+    const long = worktreeName(1, 'x'.repeat(200), true);
+    expect(long.length).toBe(80);
+    expect(long.startsWith('PR #1 (branch) x')).toBe(true);
   });
 });
 
@@ -86,9 +97,35 @@ describe('handleRequest — new workspace', () => {
     await handleRequest({ ...review, action: 'continue' }, deps);
     expect(deps.git.fetchBranch).toHaveBeenCalledWith('/repo', 'fix/login');
     expect(deps.git.fetchPrRef).not.toHaveBeenCalled();
-    expect(deps.orca.createWorktree).toHaveBeenCalledWith(expect.objectContaining({ base: 'origin/fix/login', comment: 'github-orca:acme/web-app#12:branch' }));
+    expect(deps.orca.createWorktree).toHaveBeenCalledWith(expect.objectContaining({
+      base: 'origin/fix/login', comment: 'github-orca:acme/web-app#12:branch', name: 'PR #12 (branch) Fix login',
+    }));
     expect(deps.git.setUpstream).toHaveBeenCalledWith(created.path, 'fix/login');
     expect(deps.orca.setStatus).toHaveBeenCalledWith(created.id, 'in-progress');
+  });
+
+  it('address-comments: behaves like continue for git (real branch, upstream, :branch marker)', async () => {
+    await handleRequest({ ...review, action: 'address-comments' }, deps);
+    expect(deps.git.fetchBranch).toHaveBeenCalledWith('/repo', 'fix/login');
+    expect(deps.git.fetchPrRef).not.toHaveBeenCalled();
+    expect(deps.orca.createWorktree).toHaveBeenCalledWith(expect.objectContaining({
+      base: 'origin/fix/login', comment: 'github-orca:acme/web-app#12:branch', name: 'PR #12 (branch) Fix login',
+    }));
+    expect(deps.git.setUpstream).toHaveBeenCalledWith(created.path, 'fix/login');
+    expect(deps.orca.setStatus).toHaveBeenCalledWith(created.id, 'in-progress');
+  });
+
+  it('runs repo setup hooks for same-repo PRs', async () => {
+    await handleRequest(review, deps);
+    expect(deps.orca.createWorktree.mock.calls[0][0]).not.toHaveProperty('setup');
+  });
+
+  it('skips repo setup hooks for fork PRs (review and checkout)', async () => {
+    deps = makeDeps({ pr: { isCrossRepository: true } });
+    await handleRequest(review, deps);
+    await handleRequest({ ...review, action: 'checkout', template: undefined }, deps);
+    expect(deps.orca.createWorktree).toHaveBeenCalledTimes(2);
+    for (const [opts] of deps.orca.createWorktree.mock.calls) expect(opts).toMatchObject({ setup: 'skip' });
   });
 
   it('passes a hostile title through as data', async () => {
@@ -105,8 +142,59 @@ describe('handleRequest — reuse', () => {
     expect(res).toEqual({ ok: true, worktreeName: 'PR #12 old', worktreePath: '/wt/old', reused: true });
     expect(deps.orca.startAgent).toHaveBeenCalledWith('repo::/wt/old', 'claude', `Review ${pr.url} (fix/login)`);
     expect(deps.orca.setStatus).toHaveBeenCalledWith('repo::/wt/old', 'in-review');
-    expect(deps.git.fetchPrRef).not.toHaveBeenCalled();
     expect(deps.orca.createWorktree).not.toHaveBeenCalled();
+  });
+
+  it('refreshes the PR ref and fast-forwards the existing workspace before starting the agent', async () => {
+    const deps = makeDeps({ worktrees: [existing('github-orca:acme/web-app#12')] });
+    const order: string[] = [];
+    deps.git.fetchPrRef.mockImplementation(async () => (order.push('fetch'), 'origin/pr/12'));
+    deps.git.fastForward.mockImplementation(async () => (order.push('ff'), true));
+    deps.orca.startAgent.mockImplementation(async () => void order.push('agent'));
+    const res = await handleRequest(review, deps);
+    expect(deps.git.fetchPrRef).toHaveBeenCalledWith('/repo', 12);
+    expect(deps.git.fastForward).toHaveBeenCalledWith('/wt/old', 'origin/pr/12');
+    expect(deps.git.fetchBranch).not.toHaveBeenCalled();
+    expect(order).toEqual(['fetch', 'ff', 'agent']);
+    expect(res).not.toHaveProperty('warning');
+  });
+
+  it('refreshes checkout and custom workspaces from the PR ref too', async () => {
+    for (const req of [{ ...review, action: 'checkout' as const, template: undefined }, { ...review, action: 'custom' as const }]) {
+      const deps = makeDeps({ worktrees: [existing('github-orca:acme/web-app#12')] });
+      await handleRequest(req, deps);
+      expect(deps.git.fastForward).toHaveBeenCalledWith('/wt/old', 'origin/pr/12');
+    }
+  });
+
+  it('refreshes branch workspaces (continue, address-comments) from origin/<headRef>', async () => {
+    for (const action of ['continue', 'address-comments'] as const) {
+      const deps = makeDeps({ worktrees: [existing('github-orca:acme/web-app#12:branch')] });
+      const res = await handleRequest({ ...review, action }, deps);
+      expect(res).toMatchObject({ ok: true, reused: true });
+      expect(deps.git.fetchBranch).toHaveBeenCalledWith('/repo', 'fix/login');
+      expect(deps.git.fastForward).toHaveBeenCalledWith('/wt/old', 'origin/fix/login');
+      expect(deps.git.fetchPrRef).not.toHaveBeenCalled();
+      expect(deps.orca.startAgent).toHaveBeenCalled();
+    }
+  });
+
+  it('still starts the agent but returns a warning when the fast-forward fails', async () => {
+    const deps = makeDeps({ worktrees: [existing('github-orca:acme/web-app#12')] });
+    deps.git.fastForward.mockResolvedValue(false);
+    const res = await handleRequest(review, deps);
+    expect(res).toEqual({
+      ok: true, worktreeName: 'PR #12 old', worktreePath: '/wt/old', reused: true,
+      warning: "Workspace non mis à jour (modifications locales ou historique divergent) : l'agent travaille sur une version antérieure de la PR",
+    });
+    expect(deps.orca.startAgent).toHaveBeenCalled();
+    expect(deps.orca.setStatus).toHaveBeenCalledWith('repo::/wt/old', 'in-review');
+  });
+
+  it('address-comments reuses the continue workspace (shared :branch marker)', async () => {
+    const deps = makeDeps({ worktrees: [existing('github-orca:acme/web-app#12'), { ...existing('github-orca:acme/web-app#12:branch'), id: 'b', path: '/wt/b' }] });
+    await handleRequest({ ...review, action: 'address-comments' }, deps);
+    expect(deps.orca.startAgent).toHaveBeenCalledWith('b', 'claude', expect.any(String));
   });
 
   it('checkout on an existing workspace only reveals it', async () => {
@@ -151,9 +239,14 @@ describe('handleRequest — errors', () => {
     expect((await handleRequest({ ...review, action: 'checkout', template: undefined }, deps)).ok).toBe(true);
   });
 
-  it('fork_unsupported for continue on a fork PR', async () => {
+  it('fork_unsupported for continue and address-comments on a fork PR', async () => {
     const deps = makeDeps({ pr: { isCrossRepository: true } });
-    expect(await handleRequest({ ...review, action: 'continue' }, deps)).toMatchObject({ ok: false, code: 'fork_unsupported' });
+    for (const action of ['continue', 'address-comments'] as const) {
+      expect(await handleRequest({ ...review, action }, deps)).toEqual({
+        ok: false, code: 'fork_unsupported', message: 'Continue work / Address comments indisponibles pour une PR de fork',
+      });
+    }
+    expect(deps.orca.createWorktree).not.toHaveBeenCalled();
   });
 
   it('returns HostErrors from adapters as responses', async () => {
