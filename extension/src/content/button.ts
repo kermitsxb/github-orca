@@ -12,6 +12,7 @@ export const ACTION_LABELS: Record<Action, string> = {
 };
 
 const MENU_ACTIONS: Action[] = ['checkout', 'continue', 'address-comments'];
+const TOAST_AUTO_HIDE_MS = 6000;
 
 function el<K extends keyof HTMLElementTagNameMap>(
   doc: Document,
@@ -44,8 +45,14 @@ export function createOrcaButton(key: string, send: Send, doc: Document = docume
   custom.append(textarea, submit);
   menu.append(...items, custom);
 
-  const status = el(doc, 'div', { className: 'gho-status', hidden: true }, { role: 'status' });
-  root.append(group, menu, status);
+  root.append(group, menu);
+
+  // The status lives in a toast attached to <body>, so it never changes the header layout.
+  const toast = el(doc, 'div', { className: 'gho-toast', hidden: true }, { role: 'status' });
+  const toastText = el(doc, 'span', { className: 'gho-toast-text' });
+  const toastClose = el(doc, 'button', { type: 'button', className: 'gho-toast-close', textContent: '×' }, { 'aria-label': 'Fermer' });
+  toast.append(toastText, toastClose);
+  let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
   const controls = [main, toggle, ...items, submit];
   let busy = false;
@@ -54,10 +61,17 @@ export function createOrcaButton(key: string, send: Send, doc: Document = docume
     menu.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
   };
-  const showStatus = (text: string, state: string) => {
-    status.hidden = false;
-    status.textContent = text;
-    root.dataset.state = state;
+  const hideToast = () => {
+    clearTimeout(hideTimer);
+    toast.hidden = true;
+  };
+  const showStatus = (text: string, state: 'busy' | 'ok' | 'warning' | 'error') => {
+    clearTimeout(hideTimer);
+    if (!toast.isConnected) doc.body.append(toast);
+    toastText.textContent = text;
+    toast.dataset.state = state;
+    toast.hidden = false;
+    if (state === 'ok') hideTimer = setTimeout(hideToast, TOAST_AUTO_HIDE_MS);
   };
 
   const run = async (action: Action, customPrompt?: string) => {
@@ -79,6 +93,7 @@ export function createOrcaButton(key: string, send: Send, doc: Document = docume
     busy = false;
   };
 
+  toastClose.addEventListener('click', hideToast);
   main.addEventListener('click', () => void run('review'));
   toggle.addEventListener('click', () => setMenu(!!menu.hidden));
   for (const item of items) item.addEventListener('click', () => void run(item.dataset.action as Action));
