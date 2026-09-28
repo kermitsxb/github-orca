@@ -1,0 +1,21 @@
+{
+  "id": "46585849-cc89-490f-a956-defab3862d59",
+  "ok": true,
+  "result": {
+    "terminal": {
+      "handle": "term_56259239-36c7-4be4-8c9d-369eeeddcf0e",
+      "tabId": "c3dd8d24-9d42-432f-9e4c-b28039e09200",
+      "paneKey": "c3dd8d24-9d42-432f-9e4c-b28039e09200:bab5e30f-f760-4a74-a32d-0689b62ee692",
+      "ptyId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96::/Users/dev/orca/workspaces/web-app/PR-2-spike@@66d5b741",
+      "worktreeId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96::/Users/dev/orca/workspaces/web-app/PR-2-spike",
+      "title": null,
+      "executionHostId": "local",
+      "incarnationId": "55970f96-7d2b-4045-b442-35fd2035ca4e",
+      "hostPlatform": "darwin",
+      "surface": "visible"
+    }
+  },
+  "_meta": {
+    "runtimeId": "2b758ae4-acdf-479d-bd60-c222af86a908"
+  }
+}

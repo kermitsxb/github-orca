@@ -1,0 +1,67 @@
+{
+  "id": "11ef7e1c-dfec-4ca1-b3af-06ed795d4cbe",
+  "ok": true,
+  "result": {
+    "repos": [
+      {
+        "id": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
+        "path": "/Users/dev/projects/web-app",
+        "displayName": "web-app",
+        "badgeColor": "#737373",
+        "addedAt": 1789564429156,
+        "kind": "git",
+        "externalWorktreeVisibilityLegacy": false,
+        "externalWorktreeVisibility": "show",
+        "gitUsername": "kermitsxb",
+        "hookSettings": {
+          "mode": "auto",
+          "setupRunPolicy": "run-by-default",
+          "setupAgentStartupPolicy": "start-immediately",
+          "scripts": {},
+          "commandSourcePolicy": "local-only"
+        },
+        "repoIcon": {
+          "type": "image",
+          "src": "https://github.com/kermitsxb.png?size=64",
+          "source": "github",
+          "label": "kermitsxb/web-app"
+        },
+        "upstream": null,
+        "gitRemoteIdentity": {
+          "canonicalKey": "github.com/kermitsxb/web-app",
+          "remoteName": "origin",
+          "remoteUrl": "git@github.com:kermitsxb/web-app.git"
+        },
+        "projectHostSetupMethod": "imported-existing-folder"
+      },
+      {
+        "id": "cfd092a6-c791-4632-bdd2-7c367211d77a",
+        "path": "/Users/dev/projects/api",
+        "displayName": "api",
+        "badgeColor": "#737373",
+        "addedAt": 1790179451883,
+        "kind": "git",
+        "externalWorktreeVisibilityLegacy": false,
+        "externalWorktreeVisibility": "show",
+        "hookSettings": {
+          "mode": "auto",
+          "setupRunPolicy": "run-by-default",
+          "setupAgentStartupPolicy": "start-immediately",
+          "scripts": {},
+          "commandSourcePolicy": "local-only"
+        },
+        "gitUsername": "kermitsxb",
+        "upstream": null,
+        "gitRemoteIdentity": {
+          "canonicalKey": "github.com/Acme/api",
+          "remoteName": "origin",
+          "remoteUrl": "git@github.com:Acme/api.git"
+        },
+        "projectHostSetupMethod": "imported-existing-folder"
+      }
+    ]
+  },
+  "_meta": {
+    "runtimeId": "2b758ae4-acdf-479d-bd60-c222af86a908"
+  }
+}

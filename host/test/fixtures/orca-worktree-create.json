@@ -1,0 +1,75 @@
+{
+  "id": "79d0ec12-39a5-4895-af67-32865d8350b7",
+  "ok": true,
+  "result": {
+    "worktree": {
+      "id": "ea07ae42-87c5-4dfb-854b-ebad72c21e96::/Users/dev/orca/workspaces/web-app/PR-2-spike",
+      "identity": {
+        "key": "wt2:local:232a5348-eca2-414e-bbbe-c202eaa42df5",
+        "executionHostId": "local",
+        "instanceId": "232a5348-eca2-414e-bbbe-c202eaa42df5"
+      },
+      "instanceId": "232a5348-eca2-414e-bbbe-c202eaa42df5",
+      "repoId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
+      "projectId": "github:kermitsxb/web-app",
+      "hostId": "local",
+      "projectHostSetupId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
+      "creatorProvenance": {
+        "kind": "host"
+      },
+      "path": "/Users/dev/orca/workspaces/web-app/PR-2-spike",
+      "head": "8191919a65e7cc3d33c15fdc805bde8217b0dfdb",
+      "branch": "refs/heads/kermitsxb/PR-2-spike",
+      "isBare": false,
+      "isMainWorktree": false,
+      "displayName": "PR #2 spike",
+      "displayNameMode": "fixed",
+      "comment": "github-orca:kermitsxb/web-app#2",
+      "linkedIssue": null,
+      "linkedPR": null,
+      "linkedLinearIssue": null,
+      "linkedLinearIssueWorkspaceId": null,
+      "linkedLinearIssueOrganizationUrlKey": null,
+      "linkedGitLabMR": null,
+      "linkedGitLabIssue": null,
+      "linkedBitbucketPR": null,
+      "linkedAzureDevOpsPR": null,
+      "linkedGiteaPR": null,
+      "linkedWorkItem": null,
+      "linkedTaskSourceContext": null,
+      "isArchived": false,
+      "isUnread": false,
+      "isPinned": false,
+      "sortOrder": 1790603688442,
+      "lastActivityAt": 1790603688442,
+      "createdAt": 1790603688442,
+      "cliProvenance": {
+        "kind": "created-by-cli",
+        "createdAt": 1790603686318
+      },
+      "baseRef": "refs/remotes/origin/pr/2",
+      "workspaceStatus": "in-progress",
+      "parentWorktreeId": null,
+      "childWorktreeIds": [],
+      "lineage": null,
+      "workspaceLineage": null,
+      "git": {
+        "path": "/Users/dev/orca/workspaces/web-app/PR-2-spike",
+        "head": "8191919a65e7cc3d33c15fdc805bde8217b0dfdb",
+        "branch": "refs/heads/kermitsxb/PR-2-spike",
+        "isBare": false,
+        "isMainWorktree": false
+      }
+    },
+    "lineage": null,
+    "workspaceLineage": null,
+    "warnings": [],
+    "catalogVersion": {
+      "epoch": "97c38bd6-e297-4cd2-bb95-13b96f4f4a2a",
+      "sequence": 107
+    }
+  },
+  "_meta": {
+    "runtimeId": "2b758ae4-acdf-479d-bd60-c222af86a908"
+  }
+}

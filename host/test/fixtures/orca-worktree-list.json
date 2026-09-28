@@ -1,0 +1,117 @@
+{
+  "id": "43b0865f-0a7c-460d-8522-e3ff80ca7f2a",
+  "ok": true,
+  "result": {
+    "worktrees": [
+      {
+        "id": "ea07ae42-87c5-4dfb-854b-ebad72c21e96::/Users/dev/projects/web-app",
+        "identity": {
+          "key": "wt2:local:54572f8e-fdf3-463c-bf01-71a49c8d20ab",
+          "executionHostId": "local",
+          "instanceId": "54572f8e-fdf3-463c-bf01-71a49c8d20ab"
+        },
+        "instanceId": "54572f8e-fdf3-463c-bf01-71a49c8d20ab",
+        "repoId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
+        "projectId": "github:kermitsxb/web-app",
+        "hostId": "local",
+        "projectHostSetupId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
+        "path": "/Users/dev/projects/web-app",
+        "head": "43e914c91d84906adf8c44f5306a0f6411d6926c",
+        "branch": "refs/heads/main",
+        "isBare": false,
+        "isMainWorktree": true,
+        "displayName": "main",
+        "displayNameMode": "automatic",
+        "comment": "",
+        "linkedIssue": null,
+        "linkedPR": null,
+        "linkedLinearIssue": null,
+        "linkedLinearIssueWorkspaceId": null,
+        "linkedLinearIssueOrganizationUrlKey": null,
+        "linkedGitLabMR": null,
+        "linkedGitLabIssue": null,
+        "linkedBitbucketPR": null,
+        "linkedAzureDevOpsPR": null,
+        "linkedGiteaPR": null,
+        "linkedWorkItem": null,
+        "linkedTaskSourceContext": null,
+        "isArchived": false,
+        "isUnread": false,
+        "isPinned": false,
+        "sortOrder": 1790603649996,
+        "lastActivityAt": 1789564440555,
+        "workspaceStatus": "in-progress",
+        "parentWorktreeId": null,
+        "childWorktreeIds": [],
+        "lineage": null,
+        "git": {
+          "path": "/Users/dev/projects/web-app",
+          "head": "43e914c91d84906adf8c44f5306a0f6411d6926c",
+          "branch": "refs/heads/main",
+          "isBare": false,
+          "isMainWorktree": true
+        }
+      },
+      {
+        "id": "ea07ae42-87c5-4dfb-854b-ebad72c21e96::/Users/dev/.superconductor/worktrees/web-app/develop",
+        "identity": {
+          "key": "wt2:local:2190a4d0-bf62-406a-b13b-43d6de950dcb",
+          "executionHostId": "local",
+          "instanceId": "2190a4d0-bf62-406a-b13b-43d6de950dcb"
+        },
+        "instanceId": "2190a4d0-bf62-406a-b13b-43d6de950dcb",
+        "repoId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
+        "projectId": "github:kermitsxb/web-app",
+        "hostId": "local",
+        "projectHostSetupId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
+        "path": "/Users/dev/.superconductor/worktrees/web-app/develop",
+        "head": "5381c974758378c573013bdfaca85bea5a8663b6",
+        "branch": "refs/heads/develop",
+        "isBare": false,
+        "isMainWorktree": false,
+        "displayName": "develop",
+        "displayNameMode": "automatic",
+        "comment": "",
+        "linkedIssue": null,
+        "linkedPR": null,
+        "linkedLinearIssue": null,
+        "linkedLinearIssueWorkspaceId": null,
+        "linkedLinearIssueOrganizationUrlKey": null,
+        "linkedGitLabMR": null,
+        "linkedGitLabIssue": null,
+        "linkedBitbucketPR": null,
+        "linkedAzureDevOpsPR": null,
+        "linkedGiteaPR": null,
+        "linkedWorkItem": null,
+        "linkedTaskSourceContext": null,
+        "isArchived": false,
+        "isUnread": false,
+        "isPinned": false,
+        "sortOrder": 1790603648996,
+        "lastActivityAt": 1789564429246,
+        "workspaceStatus": "in-progress",
+        "parentWorktreeId": null,
+        "childWorktreeIds": [],
+        "lineage": null,
+        "git": {
+          "path": "/Users/dev/.superconductor/worktrees/web-app/develop",
+          "head": "5381c974758378c573013bdfaca85bea5a8663b6",
+          "branch": "refs/heads/develop",
+          "isBare": false,
+          "isMainWorktree": false
+        }
+      }
+    ],
+    "hostScope": {
+      "hostIds": [
+        "local"
+      ],
+      "omittedHostIds": []
+    },
+    "totalCount": 2,
+    "truncated": false
+  },
+  "_meta": {
+    "runtimeId": "2b758ae4-acdf-479d-bd60-c222af86a908"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "id": "d0869103-8f24-4536-82cb-4e17096e9429",
+  "ok": true,
+  "result": {
+    "projects": [
+      {
+        "id": "github:kermitsxb/web-app",
+        "displayName": "web-app",
+        "badgeColor": "#737373",
+        "repoIcon": {
+          "type": "image",
+          "src": "https://github.com/kermitsxb.png?size=64",
+          "source": "github",
+          "label": "kermitsxb/web-app"
+        },
+        "kind": "git",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "kermitsxb",
+          "repo": "web-app"
+        },
+        "gitRemoteIdentity": {
+          "canonicalKey": "github.com/kermitsxb/web-app",
+          "remoteName": "origin",
+          "remoteUrl": "git@github.com:kermitsxb/web-app.git"
+        },
+        "sourceRepoIds": [
+          "ea07ae42-87c5-4dfb-854b-ebad72c21e96"
+        ],
+        "createdAt": 1789564429156,
+        "updatedAt": 1789564429156
+      },
+      {
+        "id": "github:acme/api",
+        "displayName": "api",
+        "badgeColor": "#737373",
+        "kind": "git",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "Acme",
+          "repo": "api"
+        },
+        "gitRemoteIdentity": {
+          "canonicalKey": "github.com/Acme/api",
+          "remoteName": "origin",
+          "remoteUrl": "git@github.com:Acme/api.git"
+        },
+        "sourceRepoIds": [
+          "cfd092a6-c791-4632-bdd2-7c367211d77a"
+        ],
+        "createdAt": 1790179451883,
+        "updatedAt": 1790179451883
+      }
+    ]
+  },
+  "_meta": {
+    "runtimeId": "2b758ae4-acdf-479d-bd60-c222af86a908"
+  }
+}
