@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>GitHub → Orca</title>
+    <style>
+      body { font: 14px -apple-system, BlinkMacSystemFont, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; }
+      label { display: flex; flex-direction: column; gap: 4px; margin: 12px 0; font-weight: 600; }
+      input, textarea, select { font: inherit; font-weight: 400; padding: 6px; }
+      .override { display: grid; grid-template-columns: 180px 160px 1fr auto; gap: 8px; margin: 8px 0; align-items: start; }
+      footer { margin-top: 24px; display: flex; gap: 12px; align-items: center; }
+    </style>
+  </head>
+  <body>
+    <h1>GitHub → Orca</h1>
+    <div id="form"></div>
+    <footer><button id="save" type="button">Enregistrer</button><span id="status"></span></footer>
+    <script src="dist/options.js"></script>
+  </body>
+</html>
