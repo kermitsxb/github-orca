@@ -1,4 +1,5 @@
 import type { Action, HostResponse } from '../../../shared/types';
+import { mapNativeError } from '../native-errors';
 
 export type Send = (action: Action, customPrompt?: string) => Promise<HostResponse>;
 
@@ -69,9 +70,10 @@ export function createOrcaButton(key: string, send: Send, doc: Document = docume
     try {
       res = await send(action, customPrompt);
     } catch (e) {
-      res = { ok: false, code: 'internal', message: e instanceof Error ? e.message : String(e) };
+      res = mapNativeError(e instanceof Error ? e.message : String(e));
     }
-    if (res.ok) showStatus(`✅ ${res.worktreeName}${res.reused ? ' (réutilisé)' : ''}`, 'ok');
+    if (res.ok && res.warning) showStatus(`⚠️ ${res.worktreeName} (réutilisé) — ${res.warning}`, 'warning');
+    else if (res.ok) showStatus(`✅ ${res.worktreeName}${res.reused ? ' (réutilisé)' : ''}`, 'ok');
     else showStatus(`❌ ${res.message}`, 'error');
     controls.forEach((c) => (c.disabled = false));
     busy = false;

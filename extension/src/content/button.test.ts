@@ -39,6 +39,19 @@ describe('createOrcaButton', () => {
     await vi.waitFor(() => expect(q('.gho-status').textContent).toContain('réutilisé'));
   });
 
+  it('shows the stale-workspace warning on a reused workspace', async () => {
+    const { q, root } = mount(vi.fn<Send>().mockResolvedValue({ ...ok, reused: true, warning: 'Workspace non mis à jour' }));
+    q<HTMLButtonElement>('.gho-main').click();
+    await vi.waitFor(() => expect(q('.gho-status').textContent).toBe('⚠️ PR #3 Fix (réutilisé) — Workspace non mis à jour'));
+    expect(root.dataset.state).toBe('warning');
+  });
+
+  it('explains a reloaded extension when the send rejects', async () => {
+    const { q } = mount(vi.fn<Send>().mockRejectedValue(new Error('Extension context invalidated.')));
+    q<HTMLButtonElement>('.gho-main').click();
+    await vi.waitFor(() => expect(q('.gho-status').textContent).toBe('❌ Extension rechargée : recharge la page'));
+  });
+
   it('ignores clicks while a request is pending', async () => {
     const d = deferred<HostResponse>();
     const send = vi.fn<Send>().mockReturnValue(d.promise);
@@ -59,7 +72,7 @@ describe('createOrcaButton', () => {
     q<HTMLButtonElement>('.gho-main').click();
     await vi.waitFor(() => expect(q('.gho-status').textContent).toBe("❌ a/b n'est pas dans Orca"));
     q<HTMLButtonElement>('.gho-main').click();
-    await vi.waitFor(() => expect(q('.gho-status').textContent).toContain('Extension context invalidated'));
+    await vi.waitFor(() => expect(q('.gho-status').textContent).toContain('Extension rechargée'));
   });
 
   it('toggles the menu and runs a menu action', async () => {

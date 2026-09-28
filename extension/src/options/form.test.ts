@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, mergeSettings } from '../settings';
-import { addOverrideRow, readForm, renderOptions } from './form';
+import { addOverrideRow, readForm, renderOptions, validateSettings } from './form';
 
 let root: HTMLElement;
 beforeEach(() => {
@@ -39,5 +39,18 @@ describe('options form', () => {
     renderOptions(root, DEFAULT_SETTINGS);
     root.querySelector<HTMLTextAreaElement>('textarea[name="template-review"]')!.value = '';
     expect(readForm(root).templates.review).toBe(DEFAULT_SETTINGS.templates.review);
+  });
+});
+
+describe('validateSettings', () => {
+  it('accepts the defaults and a valid agent', () => {
+    expect(validateSettings(DEFAULT_SETTINGS)).toBeNull();
+    expect(validateSettings({ ...DEFAULT_SETTINGS, agent: 'codex-2' })).toBeNull();
+  });
+
+  it('rejects an agent the host would refuse', () => {
+    for (const agent of ['', 'Claude', 'claude --yolo', 'a'.repeat(41), 'x;rm']) {
+      expect(validateSettings({ ...DEFAULT_SETTINGS, agent })).toBe('Agent invalide');
+    }
   });
 });

@@ -26,6 +26,7 @@ const CSS = `
 .gho-custom button { align-self: flex-end; border-radius: 6px; }
 .gho-status { margin-top: 4px; max-width: 360px; color: var(--fgColor-muted, #57606a); }
 .gho-root[data-state="error"] .gho-status { color: var(--fgColor-danger, #d1242f); }
+.gho-root[data-state="warning"] .gho-status { color: var(--fgColor-attention, #9a6700); }
 `;
 
 export function injectStyles(doc: Document): void {

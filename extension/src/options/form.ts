@@ -66,6 +66,13 @@ export function renderOptions(root: HTMLElement, s: Settings): void {
   for (const o of s.overrides) addOverrideRow(root, o);
 }
 
+const AGENT_RE = /^[a-z0-9-]{1,40}$/; // same rule as the host (host/src/validate.ts)
+
+/** Returns a French error message, or null when the settings can be saved. */
+export function validateSettings(s: Settings): string | null {
+  return AGENT_RE.test(s.agent) ? null : 'Agent invalide';
+}
+
 export function readForm(root: HTMLElement): Settings {
   const value = (sel: string) => root.querySelector<HTMLInputElement | HTMLTextAreaElement>(sel)?.value ?? '';
   const templates = {} as Record<AgentAction, string>;
