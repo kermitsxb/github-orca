@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { HostRequest, HostResponse } from '../../../shared/types';
 import { DEFAULT_SETTINGS } from '../settings';
-import { buildHostRequest, createInFlight, inFlightKey, mapNativeError, sendViaPort, type PortLike, type RunActionMessage } from './logic';
+import { buildCloneRequest, buildHostRequest, cloneInFlightKey, createInFlight, inFlightKey, mapNativeError, sendViaPort, type PortLike, type RunActionMessage } from './logic';
 
 const msg: RunActionMessage = { type: 'run-action', action: 'review', owner: 'a', repo: 'b', prNumber: 3 };
 
@@ -18,7 +18,7 @@ describe('buildHostRequest', () => {
 
   it('refuses an empty custom prompt without calling the host', () => {
     expect(buildHostRequest({ ...msg, action: 'custom', customPrompt: ' ' }, DEFAULT_SETTINGS)).toEqual({
-      ok: false, code: 'invalid_request', message: 'Prompt vide',
+      ok: false, code: 'invalid_request', message: 'Empty prompt',
     });
   });
 });
@@ -26,7 +26,7 @@ describe('buildHostRequest', () => {
 describe('mapNativeError', () => {
   it('explains a missing host', () => {
     expect(mapNativeError('Specified native messaging host not found.')).toEqual({
-      ok: false, code: 'host_missing', message: 'Host non installé : lance scripts/install.sh',
+      ok: false, code: 'host_missing', message: 'Host not installed: run scripts/install.sh',
     });
   });
 
@@ -40,13 +40,13 @@ describe('mapNativeError', () => {
     for (const m of ['Native host has exited.', 'Error when communicating with the native messaging host.']) {
       expect(mapNativeError(m)).toEqual({
         ok: false, code: 'internal',
-        message: "Le host natif s'est arrêté : voir ~/Library/Logs/github-orca/host.log ou relancer scripts/install.sh",
+        message: "The native host stopped: see ~/Library/Logs/github-orca/host.log or re-run scripts/install.sh",
       });
     }
   });
 
   it('explains a reloaded extension', () => {
-    expect(mapNativeError('Extension context invalidated.')).toEqual({ ok: false, code: 'internal', message: 'Extension rechargée : recharge la page' });
+    expect(mapNativeError('Extension context invalidated.')).toEqual({ ok: false, code: 'internal', message: 'Extension reloaded: reload the page' });
   });
 
   it('passes other errors through', () => {
@@ -132,6 +132,18 @@ describe('sendViaPort', () => {
 
   it('turns a throwing connect into an error response', async () => {
     const p = sendViaPort(() => { throw new Error('Extension context invalidated.'); }, req, () => undefined);
-    expect(await p).toEqual({ ok: false, code: 'internal', message: 'Extension rechargée : recharge la page' });
+    expect(await p).toEqual({ ok: false, code: 'internal', message: 'Extension reloaded: reload the page' });
+  });
+});
+
+describe('clone', () => {
+  it('builds a clone request with the configured folder', () => {
+    expect(buildCloneRequest({ type: 'clone-repo', owner: 'a', repo: 'b' }, { ...DEFAULT_SETTINGS, cloneDir: '~/src' })).toEqual({
+      action: 'clone', owner: 'a', repo: 'b', destination: '~/src',
+    });
+  });
+
+  it('has its own in-flight key, distinct from any PR key', () => {
+    expect(cloneInFlightKey({ owner: 'Acme', repo: 'Web' })).toBe('clone:acme/web');
   });
 });

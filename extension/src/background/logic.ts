@@ -1,4 +1,4 @@
-import type { Action, HostRequest, HostResponse } from '../../../shared/types';
+import type { Action, CloneRequest, HostMessage, HostRequest, HostResponse } from '../../../shared/types';
 import { mapNativeError } from '../native-errors';
 import { resolveTemplate, type Settings } from '../settings';
 
@@ -15,9 +15,23 @@ export interface RunActionMessage {
   customPrompt?: string;
 }
 
+export interface CloneRepoMessage {
+  type: 'clone-repo';
+  owner: string;
+  repo: string;
+}
+
+export function buildCloneRequest(msg: CloneRepoMessage, s: Settings): CloneRequest {
+  return { action: 'clone', owner: msg.owner, repo: msg.repo, destination: s.cloneDir };
+}
+
+export function cloneInFlightKey(msg: Pick<CloneRepoMessage, 'owner' | 'repo'>): string {
+  return `clone:${msg.owner}/${msg.repo}`.toLowerCase();
+}
+
 export function buildHostRequest(msg: RunActionMessage, s: Settings): HostRequest | HostResponse {
   const template = resolveTemplate(s, msg.action, msg.owner, msg.repo, msg.customPrompt);
-  if (msg.action !== 'checkout' && !template) return { ok: false, code: 'invalid_request', message: 'Prompt vide' };
+  if (msg.action !== 'checkout' && !template) return { ok: false, code: 'invalid_request', message: 'Empty prompt' };
   const req: HostRequest = { action: msg.action, owner: msg.owner, repo: msg.repo, prNumber: msg.prNumber, agent: s.agent };
   if (template) req.template = template;
   return req;
@@ -56,7 +70,7 @@ export interface PortLike {
  */
 export function sendViaPort(
   connect: () => PortLike,
-  req: HostRequest,
+  req: HostMessage,
   lastError: () => string | undefined = () => chrome.runtime.lastError?.message,
 ): Promise<HostResponse> {
   return new Promise((resolve) => {

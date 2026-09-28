@@ -18,7 +18,7 @@ export class GhCli implements GhApi {
     }
     const pr = JSON.parse(stdout) as PrMeta;
     for (const ref of [pr.headRefName, pr.baseRefName]) {
-      if (typeof ref !== 'string' || !isValidGitRef(ref)) throw new HostError('gh_failed', `Nom de branche inattendu : ${String(ref)}`);
+      if (typeof ref !== 'string' || !isValidGitRef(ref)) throw new HostError('gh_failed', `Unexpected branch name: ${String(ref)}`);
     }
     return pr;
   }

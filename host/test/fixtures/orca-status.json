@@ -7,14 +7,14 @@
     },
     "app": {
       "running": true,
-      "pid": 33054,
+      "pid": 12345,
       "desktopWindowStatus": "available"
     },
     "runtime": {
       "state": "ready",
       "reachable": true,
       "connectionState": "connected",
-      "runtimeId": "2b758ae4-acdf-479d-bd60-c222af86a908",
+      "runtimeId": "0afd382d-d136-43c6-b994-fb28665d94b9",
       "appVersion": "1.4.215",
       "remoteUpdateSupport": {
         "installMode": "interactive",
@@ -126,6 +126,6 @@
     }
   },
   "_meta": {
-    "runtimeId": "2b758ae4-acdf-479d-bd60-c222af86a908"
+    "runtimeId": "0afd382d-d136-43c6-b994-fb28665d94b9"
   }
 }

@@ -1,5 +1,5 @@
 import { interpolate, varsFromPr } from '../../shared/templates';
-import type { Action, HostRequest, HostResponse } from '../../shared/types';
+import type { Action, CloneRequest, HostMessage, HostRequest, HostResponse } from '../../shared/types';
 import { HostError } from './errors';
 import type { GhApi, GitApi, OrcaApi } from './ports';
 
@@ -20,7 +20,7 @@ const STATUS: Record<Action, string | null> = {
 const MAX_NAME = 80;
 
 export const STALE_WARNING =
-  "Workspace non mis à jour (modifications locales ou historique divergent) : l'agent travaille sur une version antérieure de la PR";
+  "Workspace not updated (local changes or diverged history): the agent works on an older version of the PR";
 
 /** Actions that work on the PR's real branch (fetch origin/<headRef>, upstream set, can push). */
 export function isBranchAction(action: Action): boolean {
@@ -44,17 +44,30 @@ export function worktreeName(prNumber: number, title: string, branch = false): s
 async function ensureOrca(orca: OrcaApi): Promise<void> {
   if (await orca.isReachable()) return;
   await orca.open();
-  if (!(await orca.isReachable())) throw new HostError('orca_unavailable', 'Orca ne répond pas');
+  if (!(await orca.isReachable())) throw new HostError('orca_unavailable', 'Orca is not responding');
+}
+
+async function clone(req: CloneRequest, { orca }: Deps): Promise<HostResponse> {
+  const name = `${req.owner}/${req.repo}`;
+  await ensureOrca(orca);
+  const existing = await orca.findProject(req.owner, req.repo);
+  if (existing) return { ok: true, worktreeName: name, worktreePath: existing.repoPath, reused: true };
+  const { path } = await orca.setupClone({
+    projectId: `github:${name}`.toLowerCase(), // Orca's own ids are lower-cased (see findProject)
+    url: `git@github.com:${name}.git`,
+    destination: req.destination,
+  });
+  return { ok: true, worktreeName: name, worktreePath: path, reused: false };
 }
 
 async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostResponse> {
   const pr = await gh.prView(req.owner, req.repo, req.prNumber);
   if (req.action !== 'checkout' && pr.state !== 'OPEN') {
-    throw new HostError('pr_not_open', `PR ${pr.state === 'MERGED' ? 'mergée' : 'fermée'} : seul Checkout only est possible`);
+    throw new HostError('pr_not_open', `PR ${pr.state === 'MERGED' ? 'merged' : 'closed'}: only Checkout only is available`);
   }
   const onBranch = isBranchAction(req.action);
   if (onBranch && pr.isCrossRepository) {
-    throw new HostError('fork_unsupported', 'Continue work / Address comments indisponibles pour une PR de fork');
+    throw new HostError('fork_unsupported', 'Continue work / Address comments are not available for a fork PR');
   }
   const prompt = req.template ? interpolate(req.template, varsFromPr(req.owner, req.repo, pr)) : undefined;
   const status = STATUS[req.action];
@@ -62,7 +75,7 @@ async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostRespo
   await ensureOrca(orca);
   const project = await orca.findProject(req.owner, req.repo);
   if (!project) {
-    throw new HostError('unknown_repo', `${req.owner}/${req.repo} n'est pas dans Orca (orca repo add --path <clone>)`);
+    throw new HostError('unknown_repo', `${req.owner}/${req.repo} is not in Orca (clone it from its GitHub page, or orca repo add --path <clone>)`);
   }
 
   const fetchBase = () =>
@@ -95,9 +108,9 @@ async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostRespo
   return { ok: true, worktreeName: wt.displayName, worktreePath: wt.path, reused: false };
 }
 
-export async function handleRequest(req: HostRequest, deps: Deps): Promise<HostResponse> {
+export async function handleRequest(req: HostMessage, deps: Deps): Promise<HostResponse> {
   try {
-    return await run(req, deps);
+    return req.action === 'clone' ? await clone(req, deps) : await run(req, deps);
   } catch (e) {
     if (e instanceof HostError) return { ok: false, code: e.code, message: e.message };
     return { ok: false, code: 'internal', message: e instanceof Error ? e.message : String(e) };

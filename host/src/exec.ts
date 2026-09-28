@@ -20,7 +20,7 @@ export class CommandError extends Error {
     public readonly timedOut: boolean,
     cause?: string,
   ) {
-    super(`${cmd}: ${(stderr.trim() || stdout.trim() || cause?.trim() || 'échec').slice(0, 500)}`);
+    super(`${cmd}: ${(stderr.trim() || stdout.trim() || cause?.trim() || 'failed').slice(0, 500)}`);
     this.name = 'CommandError';
   }
 }

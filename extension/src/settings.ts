@@ -11,11 +11,13 @@ export interface RepoOverride {
 
 export interface Settings {
   agent: string;
+  /** Parent folder for "Clone in Orca" (absolute or `~/…`, expanded by the host). */
+  cloneDir: string;
   templates: Record<AgentAction, string>;
   overrides: RepoOverride[];
 }
 
-export const DEFAULT_SETTINGS: Settings = { agent: 'claude', templates: { ...DEFAULT_TEMPLATES }, overrides: [] };
+export const DEFAULT_SETTINGS: Settings = { agent: 'claude', cloneDir: '~/orca-projects', templates: { ...DEFAULT_TEMPLATES }, overrides: [] };
 
 function isOverride(v: unknown): v is RepoOverride {
   const o = v as RepoOverride;
@@ -30,6 +32,7 @@ export function mergeSettings(stored: unknown): Settings {
   const s = (typeof stored === 'object' && stored !== null ? stored : {}) as Partial<Settings>;
   return {
     agent: typeof s.agent === 'string' && s.agent.trim() ? s.agent.trim() : DEFAULT_SETTINGS.agent,
+    cloneDir: typeof s.cloneDir === 'string' && s.cloneDir.trim() ? s.cloneDir.trim() : DEFAULT_SETTINGS.cloneDir,
     templates: { ...DEFAULT_SETTINGS.templates, ...(s.templates ?? {}) },
     overrides: Array.isArray(s.overrides) ? s.overrides.filter(isOverride) : [],
   };

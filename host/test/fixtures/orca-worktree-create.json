@@ -1,30 +1,30 @@
 {
-  "id": "79d0ec12-39a5-4895-af67-32865d8350b7",
+  "id": "f5d3f110-92c3-46d6-a348-44a17b8cf989",
   "ok": true,
   "result": {
     "worktree": {
-      "id": "ea07ae42-87c5-4dfb-854b-ebad72c21e96::/Users/dev/orca/workspaces/web-app/PR-2-spike",
+      "id": "3c051247-d8c9-4198-a0bf-27f465bb2d57::/Users/dev/orca/workspaces/web-app/PR-2-spike",
       "identity": {
-        "key": "wt2:local:232a5348-eca2-414e-bbbe-c202eaa42df5",
+        "key": "wt2:local:daee3ca8-b868-4a97-83a1-c7cd6baea8ca",
         "executionHostId": "local",
-        "instanceId": "232a5348-eca2-414e-bbbe-c202eaa42df5"
+        "instanceId": "daee3ca8-b868-4a97-83a1-c7cd6baea8ca"
       },
-      "instanceId": "232a5348-eca2-414e-bbbe-c202eaa42df5",
-      "repoId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
-      "projectId": "github:kermitsxb/web-app",
+      "instanceId": "daee3ca8-b868-4a97-83a1-c7cd6baea8ca",
+      "repoId": "3c051247-d8c9-4198-a0bf-27f465bb2d57",
+      "projectId": "github:acme/web-app",
       "hostId": "local",
-      "projectHostSetupId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
+      "projectHostSetupId": "3c051247-d8c9-4198-a0bf-27f465bb2d57",
       "creatorProvenance": {
         "kind": "host"
       },
       "path": "/Users/dev/orca/workspaces/web-app/PR-2-spike",
-      "head": "8191919a65e7cc3d33c15fdc805bde8217b0dfdb",
-      "branch": "refs/heads/kermitsxb/PR-2-spike",
+      "head": "455cf010045037760356fcff55ed7b4bc26e22f4",
+      "branch": "refs/heads/acme/PR-2-spike",
       "isBare": false,
       "isMainWorktree": false,
       "displayName": "PR #2 spike",
       "displayNameMode": "fixed",
-      "comment": "github-orca:kermitsxb/web-app#2",
+      "comment": "github-orca:acme/web-app#2",
       "linkedIssue": null,
       "linkedPR": null,
       "linkedLinearIssue": null,
@@ -55,8 +55,8 @@
       "workspaceLineage": null,
       "git": {
         "path": "/Users/dev/orca/workspaces/web-app/PR-2-spike",
-        "head": "8191919a65e7cc3d33c15fdc805bde8217b0dfdb",
-        "branch": "refs/heads/kermitsxb/PR-2-spike",
+        "head": "455cf010045037760356fcff55ed7b4bc26e22f4",
+        "branch": "refs/heads/acme/PR-2-spike",
         "isBare": false,
         "isMainWorktree": false
       }
@@ -65,11 +65,11 @@
     "workspaceLineage": null,
     "warnings": [],
     "catalogVersion": {
-      "epoch": "97c38bd6-e297-4cd2-bb95-13b96f4f4a2a",
+      "epoch": "9afd4cf1-4937-4228-882a-e7ae80cd8b5d",
       "sequence": 107
     }
   },
   "_meta": {
-    "runtimeId": "2b758ae4-acdf-479d-bd60-c222af86a908"
+    "runtimeId": "0afd382d-d136-43c6-b994-fb28665d94b9"
   }
 }

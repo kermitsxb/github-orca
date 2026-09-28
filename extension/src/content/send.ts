@@ -1,10 +1,11 @@
 import type { Action, HostResponse } from '../../../shared/types';
-import type { RunActionMessage } from '../background/logic';
+import type { CloneRepoMessage, RunActionMessage } from '../background/logic';
 import type { PrRef } from '../pr-url';
+import type { RepoRef } from '../repo-url';
 
 interface RuntimeLike {
   id?: string;
-  sendMessage(msg: RunActionMessage): Promise<unknown>;
+  sendMessage(msg: RunActionMessage | CloneRepoMessage): Promise<unknown>;
 }
 
 /**
@@ -16,6 +17,16 @@ export function createSender(getRuntime: () => RuntimeLike | undefined, pr: PrRe
     const runtime = getRuntime();
     if (!runtime?.id) throw new Error('Extension context invalidated.');
     const msg: RunActionMessage = { type: 'run-action', action, ...pr, customPrompt };
+    return (await runtime.sendMessage(msg)) as HostResponse;
+  };
+}
+
+/** Same as createSender, for the repo page's "Clone in Orca" button. */
+export function createCloneSender(getRuntime: () => RuntimeLike | undefined, repo: RepoRef) {
+  return async (): Promise<HostResponse> => {
+    const runtime = getRuntime();
+    if (!runtime?.id) throw new Error('Extension context invalidated.');
+    const msg: CloneRepoMessage = { type: 'clone-repo', owner: repo.owner, repo: repo.repo };
     return (await runtime.sendMessage(msg)) as HostResponse;
   };
 }

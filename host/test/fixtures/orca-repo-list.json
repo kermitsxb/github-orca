@@ -1,10 +1,10 @@
 {
-  "id": "11ef7e1c-dfec-4ca1-b3af-06ed795d4cbe",
+  "id": "98b5019f-7c2d-40c3-8773-3430c8c64ad4",
   "ok": true,
   "result": {
     "repos": [
       {
-        "id": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
+        "id": "3c051247-d8c9-4198-a0bf-27f465bb2d57",
         "path": "/Users/dev/projects/web-app",
         "displayName": "web-app",
         "badgeColor": "#737373",
@@ -12,7 +12,7 @@
         "kind": "git",
         "externalWorktreeVisibilityLegacy": false,
         "externalWorktreeVisibility": "show",
-        "gitUsername": "kermitsxb",
+        "gitUsername": "acme",
         "hookSettings": {
           "mode": "auto",
           "setupRunPolicy": "run-by-default",
@@ -22,20 +22,20 @@
         },
         "repoIcon": {
           "type": "image",
-          "src": "https://github.com/kermitsxb.png?size=64",
+          "src": "https://github.com/acme.png?size=64",
           "source": "github",
-          "label": "kermitsxb/web-app"
+          "label": "acme/web-app"
         },
         "upstream": null,
         "gitRemoteIdentity": {
-          "canonicalKey": "github.com/kermitsxb/web-app",
+          "canonicalKey": "github.com/acme/web-app",
           "remoteName": "origin",
-          "remoteUrl": "git@github.com:kermitsxb/web-app.git"
+          "remoteUrl": "git@github.com:acme/web-app.git"
         },
         "projectHostSetupMethod": "imported-existing-folder"
       },
       {
-        "id": "cfd092a6-c791-4632-bdd2-7c367211d77a",
+        "id": "6805512c-9b89-4b4d-9906-234626120bd7",
         "path": "/Users/dev/projects/api",
         "displayName": "api",
         "badgeColor": "#737373",
@@ -50,7 +50,7 @@
           "scripts": {},
           "commandSourcePolicy": "local-only"
         },
-        "gitUsername": "kermitsxb",
+        "gitUsername": "acme",
         "upstream": null,
         "gitRemoteIdentity": {
           "canonicalKey": "github.com/Acme/api",
@@ -62,6 +62,6 @@
     ]
   },
   "_meta": {
-    "runtimeId": "2b758ae4-acdf-479d-bd60-c222af86a908"
+    "runtimeId": "0afd382d-d136-43c6-b994-fb28665d94b9"
   }
 }

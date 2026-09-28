@@ -27,7 +27,7 @@ export function addOverrideRow(root: HTMLElement, o: RepoOverride = { repo: '', 
   const remove = doc.createElement('button');
   remove.type = 'button';
   remove.className = 'remove';
-  remove.textContent = 'Supprimer';
+  remove.textContent = 'Remove';
   remove.addEventListener('click', () => row.remove());
   row.append(repo, action, template, remove);
   root.querySelector('.overrides')!.append(row);
@@ -39,7 +39,11 @@ export function renderOptions(root: HTMLElement, s: Settings): void {
   const agent = doc.createElement('input');
   agent.name = 'agent';
   agent.value = s.agent;
-  root.append(field(doc, 'Agent (commande Orca --agent)', agent));
+  root.append(field(doc, 'Agent (Orca --agent command)', agent));
+  const cloneDir = doc.createElement('input');
+  cloneDir.name = 'cloneDir';
+  cloneDir.value = s.cloneDir;
+  root.append(field(doc, 'Clone folder (Clone in Orca clones into <folder>/<repo>)', cloneDir));
 
   const help = doc.createElement('p');
   help.textContent = 'Variables : {pr_url} {pr_number} {pr_title} {owner} {repo} {head_ref} {base_ref}';
@@ -50,27 +54,30 @@ export function renderOptions(root: HTMLElement, s: Settings): void {
     t.name = `template-${a}`;
     t.rows = 3;
     t.value = s.templates[a];
-    root.append(field(doc, `Prompt « ${LABELS[a]} »`, t));
+    root.append(field(doc, `Prompt "${LABELS[a]}"`, t));
   }
 
   const title = doc.createElement('h2');
-  title.textContent = 'Prompts par dépôt';
+  title.textContent = 'Per-repo prompts';
   const overrides = doc.createElement('div');
   overrides.className = 'overrides';
   const add = doc.createElement('button');
   add.type = 'button';
   add.className = 'add';
-  add.textContent = 'Ajouter un dépôt';
+  add.textContent = 'Add a repo';
   add.addEventListener('click', () => addOverrideRow(root));
   root.append(title, overrides, add);
   for (const o of s.overrides) addOverrideRow(root, o);
 }
 
 const AGENT_RE = /^[a-z0-9-]{1,40}$/; // same rule as the host (host/src/validate.ts)
+const CLONE_DIR_RE = /^(~|~\/.*|\/.*)$/; // absolute or ~/…, like the host
 
 /** Returns a French error message, or null when the settings can be saved. */
 export function validateSettings(s: Settings): string | null {
-  return AGENT_RE.test(s.agent) ? null : 'Agent invalide';
+  if (!AGENT_RE.test(s.agent)) return 'Invalid agent';
+  if (!CLONE_DIR_RE.test(s.cloneDir)) return 'Invalid clone folder: expected an absolute path or ~/…';
+  return null;
 }
 
 export function readForm(root: HTMLElement): Settings {
@@ -87,5 +94,5 @@ export function readForm(root: HTMLElement): Settings {
       template: row.querySelector<HTMLTextAreaElement>('[name="template"]')!.value,
     }))
     .filter((o) => o.repo && o.template.trim());
-  return mergeSettings({ agent: value('[name="agent"]'), templates, overrides });
+  return mergeSettings({ agent: value('[name="agent"]'), cloneDir: value('[name="cloneDir"]'), templates, overrides });
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { mapNativeError } from '../native-errors';
-import { createSender } from './send';
+import { createCloneSender, createSender } from './send';
 
 const pr = { owner: 'a', repo: 'b', prNumber: 3 };
 
@@ -16,7 +16,7 @@ describe('createSender', () => {
     const send = createSender(() => undefined, pr);
     const err = await send('review', undefined).catch((e: Error) => e);
     expect(mapNativeError((err as Error).message).ok).toBe(false);
-    expect(mapNativeError((err as Error).message)).toMatchObject({ message: 'Extension rechargée : recharge la page' });
+    expect(mapNativeError((err as Error).message)).toMatchObject({ message: 'Extension reloaded: reload the page' });
   });
 
   it('treats a runtime without id as invalidated too', async () => {
@@ -30,7 +30,20 @@ describe('createSender', () => {
 describe('mapNativeError', () => {
   it('maps the orphaned-script TypeError to the reload hint', () => {
     expect(mapNativeError("Cannot read properties of undefined (reading 'sendMessage')")).toMatchObject({
-      message: 'Extension rechargée : recharge la page',
+      message: 'Extension reloaded: reload the page',
     });
+  });
+});
+
+describe('createCloneSender', () => {
+  it('sends a clone-repo message through the live runtime', async () => {
+    const sendMessage = vi.fn().mockResolvedValue({ ok: true });
+    const send = createCloneSender(() => ({ id: 'ext', sendMessage }), { owner: 'a', repo: 'b' });
+    await expect(send()).resolves.toEqual({ ok: true });
+    expect(sendMessage).toHaveBeenCalledWith({ type: 'clone-repo', owner: 'a', repo: 'b' });
+  });
+
+  it('rejects once the extension was reloaded', async () => {
+    await expect(createCloneSender(() => undefined, { owner: 'a', repo: 'b' })()).rejects.toThrow(/context invalidated/i);
   });
 });

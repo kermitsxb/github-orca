@@ -25,6 +25,13 @@ export interface CreateWorktreeOptions {
   setup?: 'skip';
 }
 
+export interface CloneOptions {
+  projectId: string;
+  url: string;
+  /** Absolute parent folder: Orca clones into <destination>/<repo>. */
+  destination: string;
+}
+
 export interface OrcaApi {
   isReachable(): Promise<boolean>;
   open(): Promise<void>;
@@ -34,6 +41,8 @@ export interface OrcaApi {
   setStatus(worktreeId: string, status: string): Promise<void>;
   startAgent(worktreeId: string, agent: string, prompt: string): Promise<void>;
   reveal(worktreeId: string): Promise<void>;
+  /** Clones the repo on this machine and registers it in Orca; returns the clone path. */
+  setupClone(opts: CloneOptions): Promise<{ path: string }>;
 }
 
 export interface GitApi {
