@@ -45,9 +45,12 @@ const CSS = `
 `;
 
 export function injectStyles(doc: Document): void {
-  if (doc.getElementById('gho-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'gho-styles';
+  // Always (re)write the CSS: after an extension reload the page may still hold an older version.
+  let style = doc.getElementById('gho-styles');
+  if (!style) {
+    style = doc.createElement('style');
+    style.id = 'gho-styles';
+    doc.head.append(style);
+  }
   style.textContent = CSS;
-  doc.head.append(style);
 }

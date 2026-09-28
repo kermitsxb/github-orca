@@ -1,28 +1,39 @@
-import type { HostResponse } from '../../../shared/types';
-import type { RunActionMessage } from '../background/logic';
 import { prKey } from '../pr-url';
 import { createOrcaButton } from './button';
 import { syncButton } from './inject';
+import { createSender } from './send';
 import { injectStyles } from './styles';
 
 injectStyles(document);
 
+const instanceId = crypto.randomUUID();
+
+const observer = new MutationObserver(schedule);
 let scheduled = false;
+
+/** After an extension reload this script is orphaned (runtime id gone): stop, the new instance owns the page. */
+function stop(): void {
+  observer.disconnect();
+  document.removeEventListener('turbo:load', schedule);
+  window.removeEventListener('popstate', schedule);
+}
+
 function schedule(): void {
   if (scheduled) return;
   scheduled = true;
   requestAnimationFrame(() => {
     scheduled = false;
-    syncButton(document, location.href, (pr) =>
-      createOrcaButton(prKey(pr), (action, customPrompt) => {
-        const msg: RunActionMessage = { type: 'run-action', action, ...pr, customPrompt };
-        return chrome.runtime.sendMessage(msg) as Promise<HostResponse>;
-      }),
+    if (!globalThis.chrome?.runtime?.id) return stop();
+    syncButton(
+      document,
+      location.href,
+      (pr) => createOrcaButton(prKey(pr), createSender(() => globalThis.chrome?.runtime, pr)),
+      instanceId,
     );
   });
 }
 
-new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
+observer.observe(document.body, { childList: true, subtree: true });
 document.addEventListener('turbo:load', schedule);
 window.addEventListener('popstate', schedule);
 schedule();

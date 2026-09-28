@@ -13,6 +13,6 @@ export function mapNativeError(message: string): HostResponse {
       message: "Le host natif s'est arrêté : voir ~/Library/Logs/github-orca/host.log ou relancer scripts/install.sh",
     };
   }
-  if (/context invalidated/i.test(message)) return { ok: false, code: 'internal', message: 'Extension rechargée : recharge la page' };
+  if (/context invalidated|reading 'sendMessage'/i.test(message)) return { ok: false, code: 'internal', message: 'Extension rechargée : recharge la page' };
   return { ok: false, code: 'internal', message };
 }

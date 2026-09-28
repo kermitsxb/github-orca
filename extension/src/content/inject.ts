@@ -16,17 +16,27 @@ function findAnchor(doc: Document): Element | null {
   return null;
 }
 
-export function syncButton(doc: Document, url: string, factory: (pr: PrRef) => HTMLElement): void {
+/**
+ * Keeps exactly one button, owned by this content-script instance, bound to the current PR.
+ * After an extension reload the old script stays in the page with a dead runtime: its button
+ * (other or no `data-gho-instance`) is replaced rather than kept.
+ */
+export function syncButton(doc: Document, url: string, factory: (pr: PrRef) => HTMLElement, instanceId: string): void {
   const pr = parsePrUrl(url);
   const key = pr ? prKey(pr) : null;
-  const existing = doc.querySelector<HTMLElement>('[data-github-orca]');
   const anchor = pr ? findAnchor(doc) : null;
+  const isCurrent = (el: HTMLElement) =>
+    el.dataset.githubOrca === key &&
+    el.dataset.ghoInstance === instanceId &&
+    !(el.classList.contains('gho-floating') && anchor);
 
-  if (existing && existing.dataset.githubOrca === key && !(existing.classList.contains('gho-floating') && anchor)) return;
-  existing?.remove();
-  if (!pr) return;
+  const existing = [...doc.querySelectorAll<HTMLElement>('[data-github-orca]')];
+  const kept = existing.find(isCurrent);
+  for (const el of existing) if (el !== kept) el.remove();
+  if (kept || !pr) return;
 
   const button = factory(pr);
+  button.dataset.ghoInstance = instanceId;
   if (!anchor) {
     button.classList.add('gho-floating');
     doc.body.append(button);
