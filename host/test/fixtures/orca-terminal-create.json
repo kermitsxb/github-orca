@@ -1,21 +1,21 @@
 {
-  "id": "46585849-cc89-490f-a956-defab3862d59",
+  "id": "8f70aca2-e596-4aa8-a50d-256f2369e117",
   "ok": true,
   "result": {
     "terminal": {
-      "handle": "term_56259239-36c7-4be4-8c9d-369eeeddcf0e",
-      "tabId": "c3dd8d24-9d42-432f-9e4c-b28039e09200",
-      "paneKey": "c3dd8d24-9d42-432f-9e4c-b28039e09200:bab5e30f-f760-4a74-a32d-0689b62ee692",
-      "ptyId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96::/Users/dev/orca/workspaces/web-app/PR-2-spike@@66d5b741",
-      "worktreeId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96::/Users/dev/orca/workspaces/web-app/PR-2-spike",
+      "handle": "term_b9bcffbe-0a89-4f9e-b1d0-c8cf024feb9a",
+      "tabId": "e79fa4ba-e093-4ee2-8276-bec7820a9085",
+      "paneKey": "e79fa4ba-e093-4ee2-8276-bec7820a9085:1817592d-9c73-4cad-98b6-088a1009848e",
+      "ptyId": "3c051247-d8c9-4198-a0bf-27f465bb2d57::/Users/dev/orca/workspaces/web-app/PR-2-spike@@1a2b3c4d",
+      "worktreeId": "3c051247-d8c9-4198-a0bf-27f465bb2d57::/Users/dev/orca/workspaces/web-app/PR-2-spike",
       "title": null,
       "executionHostId": "local",
-      "incarnationId": "55970f96-7d2b-4045-b442-35fd2035ca4e",
+      "incarnationId": "98fda4a2-deb1-4602-913b-38a1e47a42f4",
       "hostPlatform": "darwin",
       "surface": "visible"
     }
   },
   "_meta": {
-    "runtimeId": "2b758ae4-acdf-479d-bd60-c222af86a908"
+    "runtimeId": "0afd382d-d136-43c6-b994-fb28665d94b9"
   }
 }

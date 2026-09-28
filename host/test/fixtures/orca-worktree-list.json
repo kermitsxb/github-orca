@@ -1,22 +1,22 @@
 {
-  "id": "43b0865f-0a7c-460d-8522-e3ff80ca7f2a",
+  "id": "e0446e77-367b-4f95-acbd-fba60dc6f5f0",
   "ok": true,
   "result": {
     "worktrees": [
       {
-        "id": "ea07ae42-87c5-4dfb-854b-ebad72c21e96::/Users/dev/projects/web-app",
+        "id": "3c051247-d8c9-4198-a0bf-27f465bb2d57::/Users/dev/projects/web-app",
         "identity": {
-          "key": "wt2:local:54572f8e-fdf3-463c-bf01-71a49c8d20ab",
+          "key": "wt2:local:8f6c2e04-ab4f-4309-8f7e-7b0ca5de3d95",
           "executionHostId": "local",
-          "instanceId": "54572f8e-fdf3-463c-bf01-71a49c8d20ab"
+          "instanceId": "8f6c2e04-ab4f-4309-8f7e-7b0ca5de3d95"
         },
-        "instanceId": "54572f8e-fdf3-463c-bf01-71a49c8d20ab",
-        "repoId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
-        "projectId": "github:kermitsxb/web-app",
+        "instanceId": "8f6c2e04-ab4f-4309-8f7e-7b0ca5de3d95",
+        "repoId": "3c051247-d8c9-4198-a0bf-27f465bb2d57",
+        "projectId": "github:acme/web-app",
         "hostId": "local",
-        "projectHostSetupId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
+        "projectHostSetupId": "3c051247-d8c9-4198-a0bf-27f465bb2d57",
         "path": "/Users/dev/projects/web-app",
-        "head": "43e914c91d84906adf8c44f5306a0f6411d6926c",
+        "head": "a73a2a630856daaad9217ce7aefe7b89d93f8778",
         "branch": "refs/heads/main",
         "isBare": false,
         "isMainWorktree": true,
@@ -46,26 +46,26 @@
         "lineage": null,
         "git": {
           "path": "/Users/dev/projects/web-app",
-          "head": "43e914c91d84906adf8c44f5306a0f6411d6926c",
+          "head": "a73a2a630856daaad9217ce7aefe7b89d93f8778",
           "branch": "refs/heads/main",
           "isBare": false,
           "isMainWorktree": true
         }
       },
       {
-        "id": "ea07ae42-87c5-4dfb-854b-ebad72c21e96::/Users/dev/.superconductor/worktrees/web-app/develop",
+        "id": "3c051247-d8c9-4198-a0bf-27f465bb2d57::/Users/dev/worktrees/web-app/develop",
         "identity": {
-          "key": "wt2:local:2190a4d0-bf62-406a-b13b-43d6de950dcb",
+          "key": "wt2:local:bf1a4cea-bf25-4626-9b9c-b9f8687c3077",
           "executionHostId": "local",
-          "instanceId": "2190a4d0-bf62-406a-b13b-43d6de950dcb"
+          "instanceId": "bf1a4cea-bf25-4626-9b9c-b9f8687c3077"
         },
-        "instanceId": "2190a4d0-bf62-406a-b13b-43d6de950dcb",
-        "repoId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
-        "projectId": "github:kermitsxb/web-app",
+        "instanceId": "bf1a4cea-bf25-4626-9b9c-b9f8687c3077",
+        "repoId": "3c051247-d8c9-4198-a0bf-27f465bb2d57",
+        "projectId": "github:acme/web-app",
         "hostId": "local",
-        "projectHostSetupId": "ea07ae42-87c5-4dfb-854b-ebad72c21e96",
-        "path": "/Users/dev/.superconductor/worktrees/web-app/develop",
-        "head": "5381c974758378c573013bdfaca85bea5a8663b6",
+        "projectHostSetupId": "3c051247-d8c9-4198-a0bf-27f465bb2d57",
+        "path": "/Users/dev/worktrees/web-app/develop",
+        "head": "5ce36390ed8cc0678a1703e862750773a6177dc2",
         "branch": "refs/heads/develop",
         "isBare": false,
         "isMainWorktree": false,
@@ -94,8 +94,8 @@
         "childWorktreeIds": [],
         "lineage": null,
         "git": {
-          "path": "/Users/dev/.superconductor/worktrees/web-app/develop",
-          "head": "5381c974758378c573013bdfaca85bea5a8663b6",
+          "path": "/Users/dev/worktrees/web-app/develop",
+          "head": "5ce36390ed8cc0678a1703e862750773a6177dc2",
           "branch": "refs/heads/develop",
           "isBare": false,
           "isMainWorktree": false
@@ -112,6 +112,6 @@
     "truncated": false
   },
   "_meta": {
-    "runtimeId": "2b758ae4-acdf-479d-bd60-c222af86a908"
+    "runtimeId": "0afd382d-d136-43c6-b994-fb28665d94b9"
   }
 }

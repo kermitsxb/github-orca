@@ -1,31 +1,36 @@
 # Fixture notes — Task 1 spike
 
 Captured on 2026-09-28 against a real local Orca instance (`orca status`, app
-version 1.4.215) and the real `gh` CLI, using repo `kermitsxb/web-app`
+version 1.4.215) and the real `gh` CLI, using repo `acme/web-app`
 (local path `/Users/dev/projects/web-app`),
-PR #2 ("docs: add git workflow rule to CLAUDE.md", `docs/git-workflow-rule`
-→ `develop`, not cross-repository). Chosen because it is not under
-`/Users/dev/projects/client` and had an open PR.
+PR #2 ("docs: add contributing guide", `docs/contributing-guide`
+→ `develop`, not cross-repository), chosen because it had an open PR.
+
+**All identifying values are anonymized**: owner (`acme`), repo, PR title and branch, local paths
+(`/Users/dev/…`), every UUID and commit SHA (randomly regenerated, consistently across files, so
+cross-references such as `sourceRepoIds` ↔ repo `id` and worktree `id` ↔ `repoId` still hold), and the pid.
+Only the structure and field names are real. Anonymize any new capture the same way before committing it
+(see AGENTS.md, Safety).
 
 ## `orca worktree create --json` (`orca-worktree-create.json`)
 
 - The worktree object is at **`result.worktree`** (not bare `result`).
 - Field names on that object that Task 4 parsers must read:
   - `id` — composite string `"<repoId>::<absolute worktree path>"`, e.g.
-    `"ea07ae42-87c5-4dfb-854b-ebad72c21e96::/Users/dev/orca/workspaces/web-app/PR-2-spike"`.
+    `"3c051247-d8c9-4198-a0bf-27f465bb2d57::/Users/dev/orca/workspaces/web-app/PR-2-spike"`.
     This exact string is what `orca terminal create --worktree "id:<...>"` and
     `orca worktree rm --worktree "id:<...>"` expect after the `id:` prefix.
   - `path` — absolute filesystem path of the worktree
     (`/Users/dev/orca/workspaces/web-app/PR-2-spike`).
   - `displayName` — the `--name` value passed in (`"PR #2 spike"`).
   - `comment` — the `--comment` value passed in
-    (`"github-orca:kermitsxb/web-app#2"`), persisted verbatim and
+    (`"github-orca:acme/web-app#2"`), persisted verbatim and
     returned unchanged by `orca worktree list --json` (see below).
   - `head` / `git.head` — the checked-out commit SHA (duplicated at top level
     and under `git`).
   - `branch` / `git.branch` — full ref, e.g.
-    `"refs/heads/kermitsxb/PR-2-spike"` (Orca prefixes the branch it creates
-    with the repo's `gitUsername`, here `kermitsxb`, then the `--name` value
+    `"refs/heads/acme/PR-2-spike"` (Orca prefixes the branch it creates
+    with the repo's `gitUsername`, here `acme`, then the `--name` value
     slugified to `PR-2-spike`).
   - `baseRef` — the `--base-branch` value as given:
     `"refs/remotes/origin/pr/2"`.
@@ -37,7 +42,7 @@ PR #2 ("docs: add git workflow rule to CLAUDE.md", `docs/git-workflow-rule`
 ## `orca terminal create --json` (`orca-terminal-create.json`)
 
 - The terminal handle is at **`result.terminal.handle`**, a string like
-  `"term_56259239-36c7-4be4-8c9d-369eeeddcf0e"`.
+  `"term_b9bcffbe-0a89-4f9e-b1d0-c8cf024feb9a"`.
 - Other useful fields on `result.terminal`: `tabId`, `paneKey`, `ptyId`,
   `worktreeId` (matches the worktree `id` above), `executionHostId`,
   `hostPlatform`, `surface`.
@@ -52,22 +57,22 @@ locally, no network fetch, `--setup skip` skips repo hooks).
 
 ## Branch naming
 
-Orca generated branch **`kermitsxb/PR-2-spike`** from `--name "PR #2 spike"`
-and the repo's registered `gitUsername` (`kermitsxb`). The `#` and spaces in
+Orca generated branch **`acme/PR-2-spike`** from `--name "PR #2 spike"`
+and the repo's registered `gitUsername` (`acme`). The `#` and spaces in
 `--name` were dropped/slugified to `PR-2-spike`.
 
 ## SHA verification (step 4)
 
-- `git -C <worktree> rev-parse HEAD` → `8191919a65e7cc3d33c15fdc805bde8217b0dfdb`
-- `gh pr view 2 --repo kermitsxb/web-app --json headRefOid -q .headRefOid`
-  → `8191919a65e7cc3d33c15fdc805bde8217b0dfdb`
+- `git -C <worktree> rev-parse HEAD` → `455cf010045037760356fcff55ed7b4bc26e22f4`
+- `gh pr view 2 --repo acme/web-app --json headRefOid -q .headRefOid`
+  → `455cf010045037760356fcff55ed7b4bc26e22f4`
 - **Equal.** Confirms `orca worktree create --base-branch origin/pr/N`
   checks out the PR head exactly, after `git fetch origin
   +pull/N/head:refs/remotes/origin/pr/N` was run first.
 
 ## `orca worktree list --json` marker check (step 5)
 
-`orca worktree list --json | grep -c "github-orca:kermitsxb/web-app#2"`
+`orca worktree list --json | grep -c "github-orca:acme/web-app#2"`
 → `1`. Confirms the `--comment` value is persisted and appears exactly once
 in the full worktree list (i.e. `comment` round-trips through
 `orca worktree list`).
@@ -76,15 +81,15 @@ in the full worktree list (i.e. `comment` round-trips through
 
 `orca worktree rm --worktree "id:<worktree id>" --json` returned
 `{"ok": true, "result": {"removed": true, "preservedBranch": {"branchName":
-"kermitsxb/PR-2-spike", "head": "8191919a..."}, "warning": "orca.yaml
+"acme/PR-2-spike", "head": "455cf010..."}, "warning": "orca.yaml
 archive hook skipped ...; pass --run-hooks to run it."}}`.
 
 Important: **`orca worktree rm` did NOT delete the local branch** — it
 returned it under `result.preservedBranch` instead (per `orca worktree rm
 --help`: "Orca retains branches it knows predated the worktree and any
 branch whose changes it cannot prove are already merged"). The branch
-`kermitsxb/PR-2-spike` had to be deleted manually:
-`git -C <repoPath> branch -D kermitsxb/PR-2-spike`. Task 4 parsers/cleanup
+`acme/PR-2-spike` had to be deleted manually:
+`git -C <repoPath> branch -D acme/PR-2-spike`. Task 4 parsers/cleanup
 logic must check `result.preservedBranch` and decide whether to delete that
 branch themselves.
 
@@ -103,13 +108,13 @@ exact shape.
 
 ## Trimming applied to fixtures (per controller ruling)
 
-- `orca-project-list.json`: trimmed to 2 entries; `github:kermitsxb/web-app`
+- `orca-project-list.json`: trimmed to 2 entries; `github:acme/web-app`
   (the project used for this spike) is listed **first**, followed by
   `github:acme/api`.
 - `orca-repo-list.json`: trimmed to 2 entries; kept the repo whose `id`
-  (`ea07ae42-87c5-4dfb-854b-ebad72c21e96`) is in
-  `github:kermitsxb/web-app`'s `sourceRepoIds`, plus one more repo
-  (`cfd092a6-c791-4632-bdd2-7c367211d77a`, which is `api`'s source repo).
+  (`3c051247-d8c9-4198-a0bf-27f465bb2d57`) is in
+  `github:acme/web-app`'s `sourceRepoIds`, plus one more repo
+  (`6805512c-9b89-4b4d-9906-234626120bd7`, which is `api`'s source repo).
   `hookSettings.scripts` contents were cleared (set to `{}`) on the kept
   entries.
 - `orca-worktree-list.json`: trimmed `result.worktrees` to its first 2
