@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fakeRunner, fixture } from '../test/fake-runner';
 import { CommandError } from './exec';
 import { HostError } from './errors';
@@ -123,5 +123,37 @@ describe('OrcaCli.setStatus / reveal', () => {
     await orca.reveal('repo::/wt');
     expect(run.calls[0].args).toEqual(['worktree', 'set', '--worktree', 'id:repo::/wt', '--workspace-status', 'in-review', '--json']);
     expect(run.calls[1].args).toEqual(['terminal', 'create', '--worktree', 'id:repo::/wt', '--focus', '--json']);
+  });
+});
+
+describe('OrcaCli.setupClone', () => {
+  // Shape read by Orca's own formatter (formatProjectHostSetupResult): { project, setup: { path }, repo }.
+  const cloned = JSON.stringify({
+    ok: true,
+    result: { project: { id: 'github:o/r' }, setup: { id: 's1', path: '/Users/me/orca-projects/r' }, repo: { id: 'r1' } },
+  });
+
+  it('creates the parent folder, then clones through Orca with a long timeout', async () => {
+    const run = fakeRunner([['orca project setup-clone', cloned]]);
+    const mkdir = vi.fn().mockResolvedValue(undefined);
+    const res = await new OrcaCli(run, mkdir).setupClone({
+      projectId: 'github:o/r', url: 'git@github.com:o/r.git', destination: '/Users/me/orca-projects',
+    });
+    expect(mkdir).toHaveBeenCalledWith('/Users/me/orca-projects');
+    expect(run.calls[0].args).toEqual([
+      'project', 'setup-clone', '--project', 'github:o/r', '--host', 'local',
+      '--url', 'git@github.com:o/r.git', '--destination', '/Users/me/orca-projects', '--json',
+    ]);
+    expect(run.calls[0].opts?.timeoutMs).toBe(600_000);
+    expect(res).toEqual({ path: '/Users/me/orca-projects/r' });
+  });
+
+  it('reports a folder that cannot be created as orca_failed', async () => {
+    const run = fakeRunner([]);
+    const mkdir = vi.fn().mockRejectedValue(new Error('EACCES: permission denied'));
+    const err = await new OrcaCli(run, mkdir).setupClone({ projectId: 'p', url: 'u', destination: '/x' }).catch((e) => e);
+    expect(err).toBeInstanceOf(HostError);
+    expect(err).toMatchObject({ code: 'orca_failed', message: expect.stringContaining('/x') });
+    expect(run.calls).toHaveLength(0);
   });
 });

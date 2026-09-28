@@ -29,6 +29,7 @@ function makeDeps(overrides: { pr?: Partial<PrMeta>; worktrees?: WorktreeInfo[] 
       setStatus: vi.fn().mockResolvedValue(undefined),
       startAgent: vi.fn().mockResolvedValue(undefined),
       reveal: vi.fn().mockResolvedValue(undefined),
+      setupClone: vi.fn().mockResolvedValue({ path: '/Users/me/orca-projects/Web-App' }),
     },
   };
   return deps satisfies Deps;
@@ -259,5 +260,44 @@ describe('handleRequest — errors', () => {
     const deps = makeDeps();
     deps.gh.prView.mockRejectedValue(new TypeError('boom'));
     expect(await handleRequest(review, deps)).toEqual({ ok: false, code: 'internal', message: 'boom' });
+  });
+});
+
+describe('handleRequest — clone', () => {
+  const clone = { action: 'clone' as const, owner: 'Acme', repo: 'Web-App', destination: '/Users/me/orca-projects' };
+  const cloneDeps = (project: { projectId: string; repoPath: string } | null) => {
+    const deps = makeDeps();
+    deps.orca.findProject.mockResolvedValue(project);
+    return deps;
+  };
+
+  it('clones over SSH into the destination under a lower-cased project id', async () => {
+    const deps = cloneDeps(null);
+    const res = await handleRequest(clone, deps);
+    expect(deps.orca.setupClone).toHaveBeenCalledWith({
+      projectId: 'github:acme/web-app', url: 'git@github.com:Acme/Web-App.git', destination: '/Users/me/orca-projects',
+    });
+    expect(res).toEqual({ ok: true, worktreeName: 'Acme/Web-App', worktreePath: '/Users/me/orca-projects/Web-App', reused: false });
+    expect(deps.gh.prView).not.toHaveBeenCalled();
+  });
+
+  it('does not clone a repo Orca already has', async () => {
+    const deps = cloneDeps({ projectId: 'github:acme/web-app', repoPath: '/src/web-app' });
+    const res = await handleRequest(clone, deps);
+    expect(deps.orca.setupClone).not.toHaveBeenCalled();
+    expect(res).toEqual({ ok: true, worktreeName: 'Acme/Web-App', worktreePath: '/src/web-app', reused: true });
+  });
+
+  it('starts Orca first when it is not running', async () => {
+    const deps = cloneDeps(null);
+    deps.orca.isReachable.mockResolvedValueOnce(false).mockResolvedValue(true);
+    await handleRequest(clone, deps);
+    expect(deps.orca.open).toHaveBeenCalled();
+  });
+
+  it('returns the Orca error', async () => {
+    const deps = cloneDeps(null);
+    deps.orca.setupClone.mockRejectedValue(new HostError('orca_failed', 'destination exists'));
+    expect(await handleRequest(clone, deps)).toEqual({ ok: false, code: 'orca_failed', message: 'destination exists' });
   });
 });

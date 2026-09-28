@@ -2,7 +2,10 @@ const CSS = `
 .gho-root { position: relative; display: inline-flex; align-items: center; font-size: 14px; }
 .gho-root.gho-floating { position: fixed; right: 16px; bottom: 16px; z-index: 100; }
 .gho-group { display: inline-flex; }
-.gho-group button, .gho-menu button, .gho-custom button {
+.gho-clone { list-style: none; }
+.gho-single { height: 28px; padding: 0 12px; line-height: 26px; border-radius: 6px; }
+.gho-single:hover:not(:disabled) { background: var(--button-default-bgColor-hover, #f3f4f6); }
+.gho-single, .gho-group button, .gho-menu button, .gho-custom button {
   font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap;
   color: var(--button-default-fgColor-rest, #24292f);
   background: var(--button-default-bgColor-rest, #f6f8fa);

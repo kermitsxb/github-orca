@@ -39,3 +39,12 @@ describe('resolveTemplate', () => {
     expect(resolveTemplate(s, 'custom', 'a', 'b', '   ')).toBeUndefined();
   });
 });
+
+describe('mergeSettings — cloneDir', () => {
+  it('defaults to ~/orca-projects, keeps a stored folder, replaces a blank one', () => {
+    expect(DEFAULT_SETTINGS.cloneDir).toBe('~/orca-projects');
+    expect(mergeSettings({ cloneDir: ' ~/src ' }).cloneDir).toBe('~/src');
+    expect(mergeSettings({ cloneDir: ' ' }).cloneDir).toBe('~/orca-projects');
+    expect(mergeSettings({ cloneDir: 3 }).cloneDir).toBe('~/orca-projects');
+  });
+});

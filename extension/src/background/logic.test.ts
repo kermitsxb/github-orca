@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { HostRequest, HostResponse } from '../../../shared/types';
 import { DEFAULT_SETTINGS } from '../settings';
-import { buildHostRequest, createInFlight, inFlightKey, mapNativeError, sendViaPort, type PortLike, type RunActionMessage } from './logic';
+import { buildCloneRequest, buildHostRequest, cloneInFlightKey, createInFlight, inFlightKey, mapNativeError, sendViaPort, type PortLike, type RunActionMessage } from './logic';
 
 const msg: RunActionMessage = { type: 'run-action', action: 'review', owner: 'a', repo: 'b', prNumber: 3 };
 
@@ -133,5 +133,17 @@ describe('sendViaPort', () => {
   it('turns a throwing connect into an error response', async () => {
     const p = sendViaPort(() => { throw new Error('Extension context invalidated.'); }, req, () => undefined);
     expect(await p).toEqual({ ok: false, code: 'internal', message: 'Extension rechargée : recharge la page' });
+  });
+});
+
+describe('clone', () => {
+  it('builds a clone request with the configured folder', () => {
+    expect(buildCloneRequest({ type: 'clone-repo', owner: 'a', repo: 'b' }, { ...DEFAULT_SETTINGS, cloneDir: '~/src' })).toEqual({
+      action: 'clone', owner: 'a', repo: 'b', destination: '~/src',
+    });
+  });
+
+  it('has its own in-flight key, distinct from any PR key', () => {
+    expect(cloneInFlightKey({ owner: 'Acme', repo: 'Web' })).toBe('clone:acme/web');
   });
 });

@@ -54,3 +54,29 @@ describe('isValidGitRef', () => {
     },
   );
 });
+
+describe('parseRequest — clone', () => {
+  const clone = { action: 'clone', owner: 'Acme', repo: 'Web-App', destination: '~/orca-projects' };
+
+  it('expands ~ against the home directory and normalizes the path', () => {
+    expect(parseRequest(clone, '/Users/me')).toEqual({ ...clone, destination: '/Users/me/orca-projects' });
+    expect(parseRequest({ ...clone, destination: '~' }, '/Users/me')).toMatchObject({ destination: '/Users/me' });
+    expect(parseRequest({ ...clone, destination: '/src/./a/../b/' }, '/Users/me')).toMatchObject({ destination: '/src/b' });
+  });
+
+  it('ignores PR-only fields', () => {
+    expect(parseRequest({ ...clone, prNumber: 3, agent: 'x', template: 't' }, '/h')).toEqual({ ...clone, destination: '/h/orca-projects' });
+  });
+
+  it.each([
+    ['relative destination', { ...clone, destination: 'projects' }],
+    ['~user destination', { ...clone, destination: '~bob/x' }],
+    ['empty destination', { ...clone, destination: '' }],
+    ['non-string destination', { ...clone, destination: 3 }],
+    ['destination with newline', { ...clone, destination: '/a\nb' }],
+    ['destination too long', { ...clone, destination: `/${'x'.repeat(1_000)}` }],
+    ['invalid repo', { ...clone, repo: '..' }],
+  ])('rejects %s', (_label, raw) => {
+    expect(codeOf(() => parseRequest(raw, '/h'))).toBe('invalid_request');
+  });
+});

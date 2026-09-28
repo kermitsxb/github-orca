@@ -1,6 +1,7 @@
+import { mkdir } from 'node:fs/promises';
 import { HostError, toHostError } from './errors';
 import type { Runner } from './exec';
-import type { CreateWorktreeOptions, OrcaApi, ProjectRef, WorktreeInfo } from './ports';
+import type { CloneOptions, CreateWorktreeOptions, OrcaApi, ProjectRef, WorktreeInfo } from './ports';
 
 type Json = Record<string, any>;
 
@@ -35,7 +36,10 @@ function toWorktreeInfo(w: Json): WorktreeInfo {
 }
 
 export class OrcaCli implements OrcaApi {
-  constructor(private readonly run: Runner) {}
+  constructor(
+    private readonly run: Runner,
+    private readonly makeDir: (path: string) => Promise<unknown> = (path) => mkdir(path, { recursive: true }),
+  ) {}
 
   private async call(args: string[], timeoutMs = 30_000): Promise<Json> {
     try {
@@ -103,5 +107,19 @@ export class OrcaCli implements OrcaApi {
 
   async reveal(worktreeId: string): Promise<void> {
     await this.call(['terminal', 'create', '--worktree', `id:${worktreeId}`, '--focus']);
+  }
+
+  async setupClone(o: CloneOptions): Promise<{ path: string }> {
+    // Orca does not create the parent folder (default ~/orca-projects may not exist yet).
+    try {
+      await this.makeDir(o.destination);
+    } catch (e) {
+      throw new HostError('orca_failed', `Impossible de créer ${o.destination} : ${e instanceof Error ? e.message : String(e)}`);
+    }
+    const result = await this.call(
+      ['project', 'setup-clone', '--project', o.projectId, '--host', 'local', '--url', o.url, '--destination', o.destination],
+      600_000,
+    );
+    return { path: String(result.setup?.path ?? result.repo?.path ?? o.destination) };
   }
 }

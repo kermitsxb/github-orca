@@ -40,6 +40,10 @@ export function renderOptions(root: HTMLElement, s: Settings): void {
   agent.name = 'agent';
   agent.value = s.agent;
   root.append(field(doc, 'Agent (commande Orca --agent)', agent));
+  const cloneDir = doc.createElement('input');
+  cloneDir.name = 'cloneDir';
+  cloneDir.value = s.cloneDir;
+  root.append(field(doc, 'Dossier de clonage (« Clone in Orca » clone dans <dossier>/<repo>)', cloneDir));
 
   const help = doc.createElement('p');
   help.textContent = 'Variables : {pr_url} {pr_number} {pr_title} {owner} {repo} {head_ref} {base_ref}';
@@ -67,10 +71,13 @@ export function renderOptions(root: HTMLElement, s: Settings): void {
 }
 
 const AGENT_RE = /^[a-z0-9-]{1,40}$/; // same rule as the host (host/src/validate.ts)
+const CLONE_DIR_RE = /^(~|~\/.*|\/.*)$/; // absolute or ~/…, like the host
 
 /** Returns a French error message, or null when the settings can be saved. */
 export function validateSettings(s: Settings): string | null {
-  return AGENT_RE.test(s.agent) ? null : 'Agent invalide';
+  if (!AGENT_RE.test(s.agent)) return 'Agent invalide';
+  if (!CLONE_DIR_RE.test(s.cloneDir)) return 'Dossier de clonage invalide : chemin absolu ou ~/… attendu';
+  return null;
 }
 
 export function readForm(root: HTMLElement): Settings {
@@ -87,5 +94,5 @@ export function readForm(root: HTMLElement): Settings {
       template: row.querySelector<HTMLTextAreaElement>('[name="template"]')!.value,
     }))
     .filter((o) => o.repo && o.template.trim());
-  return mergeSettings({ agent: value('[name="agent"]'), templates, overrides });
+  return mergeSettings({ agent: value('[name="agent"]'), cloneDir: value('[name="cloneDir"]'), templates, overrides });
 }

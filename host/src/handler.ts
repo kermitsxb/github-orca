@@ -1,5 +1,5 @@
 import { interpolate, varsFromPr } from '../../shared/templates';
-import type { Action, HostRequest, HostResponse } from '../../shared/types';
+import type { Action, CloneRequest, HostMessage, HostRequest, HostResponse } from '../../shared/types';
 import { HostError } from './errors';
 import type { GhApi, GitApi, OrcaApi } from './ports';
 
@@ -45,6 +45,19 @@ async function ensureOrca(orca: OrcaApi): Promise<void> {
   if (await orca.isReachable()) return;
   await orca.open();
   if (!(await orca.isReachable())) throw new HostError('orca_unavailable', 'Orca ne répond pas');
+}
+
+async function clone(req: CloneRequest, { orca }: Deps): Promise<HostResponse> {
+  const name = `${req.owner}/${req.repo}`;
+  await ensureOrca(orca);
+  const existing = await orca.findProject(req.owner, req.repo);
+  if (existing) return { ok: true, worktreeName: name, worktreePath: existing.repoPath, reused: true };
+  const { path } = await orca.setupClone({
+    projectId: `github:${name}`.toLowerCase(), // Orca's own ids are lower-cased (see findProject)
+    url: `git@github.com:${name}.git`,
+    destination: req.destination,
+  });
+  return { ok: true, worktreeName: name, worktreePath: path, reused: false };
 }
 
 async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostResponse> {
@@ -95,9 +108,9 @@ async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostRespo
   return { ok: true, worktreeName: wt.displayName, worktreePath: wt.path, reused: false };
 }
 
-export async function handleRequest(req: HostRequest, deps: Deps): Promise<HostResponse> {
+export async function handleRequest(req: HostMessage, deps: Deps): Promise<HostResponse> {
   try {
-    return await run(req, deps);
+    return req.action === 'clone' ? await clone(req, deps) : await run(req, deps);
   } catch (e) {
     if (e instanceof HostError) return { ok: false, code: e.code, message: e.message };
     return { ok: false, code: 'internal', message: e instanceof Error ? e.message : String(e) };

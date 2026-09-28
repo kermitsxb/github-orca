@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { HostResponse } from '../../../shared/types';
-import { createOrcaButton, type Send } from './button';
+import { createCloneButton, createOrcaButton, type Send } from './button';
 
 const ok: HostResponse = { ok: true, worktreeName: 'PR #3 Fix', worktreePath: '/wt', reused: false };
 
@@ -164,5 +164,48 @@ describe('createOrcaButton', () => {
     await vi.advanceTimersByTimeAsync(10_000);
     expect(toast()!.hidden).toBe(false);
     expect(toastText()).toBe('❌ gh: échec');
+  });
+});
+
+describe('createCloneButton', () => {
+  const cloned: HostResponse = { ok: true, worktreeName: 'a/b', worktreePath: '/Users/me/orca-projects/b', reused: false };
+  const mountClone = (send: () => Promise<HostResponse>) => {
+    const ul = document.createElement('ul');
+    const root = createCloneButton('a/b', send, document);
+    ul.append(root);
+    document.body.replaceChildren(ul);
+    return { root, button: root.querySelector<HTMLButtonElement>('button')! };
+  };
+
+  it('is a list item tagged with the repo key, fitting the repo header list', () => {
+    const { root, button } = mountClone(vi.fn());
+    expect(root.tagName).toBe('LI');
+    expect(root.dataset.githubOrca).toBe('a/b');
+    expect(button.textContent).toBe('Clone in Orca');
+  });
+
+  it('clones and reports the clone path', async () => {
+    const send = vi.fn().mockResolvedValue(cloned);
+    const { button } = mountClone(send);
+    button.click();
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(button.disabled).toBe(true);
+    await vi.waitFor(() => expect(toastText()).toBe('✅ a/b cloné dans /Users/me/orca-projects/b'));
+    expect(button.disabled).toBe(false);
+  });
+
+  it('says when the repo is already in Orca', async () => {
+    const { button } = mountClone(vi.fn().mockResolvedValue({ ...cloned, worktreePath: '/src/b', reused: true }));
+    button.click();
+    await vi.waitFor(() => expect(toastText()).toBe('ℹ️ a/b est déjà dans Orca (/src/b)'));
+  });
+
+  it('shows host errors and rejected sends', async () => {
+    const { button } = mountClone(vi.fn().mockResolvedValue({ ok: false, code: 'orca_failed', message: 'boom' }));
+    button.click();
+    await vi.waitFor(() => expect(toastText()).toBe('❌ boom'));
+    const second = mountClone(vi.fn().mockRejectedValue(new Error('Extension context invalidated.')));
+    second.button.click();
+    await vi.waitFor(() => expect(toastText()).toContain('Extension rechargée'));
   });
 });

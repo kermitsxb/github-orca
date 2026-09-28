@@ -13,6 +13,7 @@ describe('options form', () => {
   it('round-trips settings', () => {
     const s = mergeSettings({
       agent: 'codex',
+      cloneDir: '/src',
       templates: { review: 'R {pr_url}' },
       overrides: [{ repo: 'Acme/Web-App', action: 'review', template: '/web-review {pr_url}' }],
     });
@@ -51,6 +52,20 @@ describe('validateSettings', () => {
   it('rejects an agent the host would refuse', () => {
     for (const agent of ['', 'Claude', 'claude --yolo', 'a'.repeat(41), 'x;rm']) {
       expect(validateSettings({ ...DEFAULT_SETTINGS, agent })).toBe('Agent invalide');
+    }
+  });
+});
+
+describe('validateSettings — cloneDir', () => {
+  it('accepts an absolute or ~ folder', () => {
+    for (const cloneDir of ['~', '~/orca-projects', '/Users/me/src']) {
+      expect(validateSettings({ ...DEFAULT_SETTINGS, cloneDir })).toBeNull();
+    }
+  });
+
+  it('rejects a folder the host would refuse', () => {
+    for (const cloneDir of ['src', '~bob/src', './x']) {
+      expect(validateSettings({ ...DEFAULT_SETTINGS, cloneDir })).toMatch(/Dossier de clonage/);
     }
   });
 });

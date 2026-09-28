@@ -14,6 +14,16 @@ export interface HostRequest {
   template?: string;
 }
 
+/** Clone a repository into Orca (repo page button). `destination` is the parent folder. */
+export interface CloneRequest {
+  action: 'clone';
+  owner: string;
+  repo: string;
+  destination: string;
+}
+
+export type HostMessage = HostRequest | CloneRequest;
+
 export type ErrorCode =
   | 'host_missing'
   | 'invalid_request'

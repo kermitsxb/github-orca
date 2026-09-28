@@ -1,4 +1,4 @@
-import type { Action, HostRequest, HostResponse } from '../../../shared/types';
+import type { Action, CloneRequest, HostMessage, HostRequest, HostResponse } from '../../../shared/types';
 import { mapNativeError } from '../native-errors';
 import { resolveTemplate, type Settings } from '../settings';
 
@@ -13,6 +13,20 @@ export interface RunActionMessage {
   repo: string;
   prNumber: number;
   customPrompt?: string;
+}
+
+export interface CloneRepoMessage {
+  type: 'clone-repo';
+  owner: string;
+  repo: string;
+}
+
+export function buildCloneRequest(msg: CloneRepoMessage, s: Settings): CloneRequest {
+  return { action: 'clone', owner: msg.owner, repo: msg.repo, destination: s.cloneDir };
+}
+
+export function cloneInFlightKey(msg: Pick<CloneRepoMessage, 'owner' | 'repo'>): string {
+  return `clone:${msg.owner}/${msg.repo}`.toLowerCase();
 }
 
 export function buildHostRequest(msg: RunActionMessage, s: Settings): HostRequest | HostResponse {
@@ -56,7 +70,7 @@ export interface PortLike {
  */
 export function sendViaPort(
   connect: () => PortLike,
-  req: HostRequest,
+  req: HostMessage,
   lastError: () => string | undefined = () => chrome.runtime.lastError?.message,
 ): Promise<HostResponse> {
   return new Promise((resolve) => {

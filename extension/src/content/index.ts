@@ -1,7 +1,8 @@
 import { prKey } from '../pr-url';
-import { createOrcaButton } from './button';
-import { syncButton } from './inject';
-import { createSender } from './send';
+import { repoKey } from '../repo-url';
+import { createCloneButton, createOrcaButton } from './button';
+import { resolveTarget, syncButton } from './inject';
+import { createCloneSender, createSender } from './send';
 import { injectStyles } from './styles';
 
 injectStyles(document);
@@ -24,12 +25,12 @@ function schedule(): void {
   requestAnimationFrame(() => {
     scheduled = false;
     if (!globalThis.chrome?.runtime?.id) return stop();
-    syncButton(
-      document,
-      location.href,
-      (pr) => createOrcaButton(prKey(pr), createSender(() => globalThis.chrome?.runtime, pr)),
-      instanceId,
-    );
+    const runtime = () => globalThis.chrome?.runtime;
+    const target = resolveTarget(location.href, {
+      pr: (pr) => createOrcaButton(prKey(pr), createSender(runtime, pr)),
+      repo: (repo) => createCloneButton(repoKey(repo), createCloneSender(runtime, repo)),
+    });
+    syncButton(document, target, instanceId);
   });
 }
 
