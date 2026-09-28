@@ -63,3 +63,7 @@ whose code you are willing to run.
 - [ ] Merged PR → Review shows “PR mergée : seul Checkout only est possible”.
 - [ ] Repo not in Orca → “n'est pas dans Orca”.
 - [ ] Orca quit → it starts, then the workspace opens.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
