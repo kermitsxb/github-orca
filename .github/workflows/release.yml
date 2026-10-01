@@ -1,8 +1,8 @@
 # Builds and tests on Linux, macOS and Windows for every PR / push to main: unit tests, typecheck, build, a host
 # smoke test (one invalid native frame) and an install smoke test (the installer against stub Orca launchers, then the
-# installed wrapper). Ubuntu also lints the Firefox build and uploads both extensions. On main, release-please keeps a
-# release PR up to date; merging it tags vX.Y.Z and creates the GitHub Release, then the Firefox extension is signed
-# on AMO (unlisted) and both extensions are attached to it. Everything runs in this workflow: tags created with
+# installed wrapper; on Windows the installer also runs the build). Ubuntu also lints the Firefox build and uploads
+# both extensions. On main, release-please keeps a release PR up to date; merging it tags vX.Y.Z and creates the GitHub
+# Release, then the Firefox extension is signed on AMO (unlisted) and both extensions are attached to it. Everything runs in this workflow: tags created with
 # GITHUB_TOKEN trigger no other. The native host is not released: it is installed from a clone.
 name: Build and release
 
@@ -71,7 +71,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $stub | Out-Null
           Set-Content -LiteralPath (Join-Path $stub 'orca.cmd') -Value "@echo off`r`nexit /b 0" -Encoding ascii
           $env:PATH = "$stub;$env:PATH"
-          $env:GITHUB_ORCA_SKIP_BUILD = '1'
+          # No GITHUB_ORCA_SKIP_BUILD here: exercise install.ps1's own `npm run build` under Windows PowerShell 5.1.
           powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1
           if ($LASTEXITCODE -ne 0) { throw "install.ps1 failed (exit code $LASTEXITCODE)" }
           foreach ($key in @(
