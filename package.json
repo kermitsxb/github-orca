@@ -10,7 +10,9 @@
     "test": "vitest run",
     "build": "node build.mjs",
     "typecheck": "tsc --noEmit",
-    "gen-key": "node scripts/gen-key.mjs"
+    "gen-key": "node scripts/gen-key.mjs",
+    "lint:firefox": "web-ext lint --source-dir extension-firefox",
+    "sign:firefox": "web-ext sign --channel=unlisted --source-dir extension-firefox --artifacts-dir web-ext-artifacts"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +25,7 @@
     "esbuild": "^0.28.2",
     "jsdom": "^29.1.1",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.2",
+    "web-ext": "^10.7.0"
   }
 }
