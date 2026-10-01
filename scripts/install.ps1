@@ -24,6 +24,15 @@ function Write-Utf8File([string]$Path, [string]$Content) {
   [System.IO.File]::WriteAllText($Path, $Content, $Utf8NoBom)
 }
 
+# cmd.exe decodes batch files in the OEM code page (e.g. 437, 850), not UTF-8.
+function Get-OemEncoding {
+  return [System.Text.Encoding]::GetEncoding([System.Globalization.CultureInfo]::CurrentCulture.TextInfo.OEMCodePage)
+}
+
+function Test-OemRoundTrip([System.Text.Encoding]$Encoding, [string]$Value) {
+  return $Encoding.GetString($Encoding.GetBytes($Value)) -ceq $Value
+}
+
 # Values inserted into the .bat: `%` would otherwise be expanded by cmd.exe.
 function Escape-Bat([string]$Value) {
   return $Value.Replace('%', '%%')
@@ -75,7 +84,16 @@ $Bat = @(
   'set "GITHUB_ORCA_HOST_MAIN=1"',
   "`"$(Escape-Bat $NodeBin)`" `"$(Escape-Bat $HostScript)`" %*"
 ) -join "`r`n"
-Write-Utf8File $Wrapper ($Bat + "`r`n")
+$BatContent = $Bat + "`r`n"
+$Oem = Get-OemEncoding
+if (-not (Test-OemRoundTrip $Oem $BatContent)) {
+  $Offending = @($ToolDirs + @($NodeBin, $HostScript)) | Where-Object { -not (Test-OemRoundTrip $Oem $_) } |
+    Select-Object -Unique
+  Fail ("These paths contain characters that cmd.exe cannot read in the OEM code page $($Oem.CodePage):`n  " +
+    ($Offending -join "`n  ") +
+    "`nMove the repository or the tools to a path without such characters, then run this script again.")
+}
+[System.IO.File]::WriteAllText($Wrapper, $BatContent, $Oem)
 Write-Host "Wrapper: $Wrapper"
 
 $Description = "GitHub $Arrow Orca bridge"
