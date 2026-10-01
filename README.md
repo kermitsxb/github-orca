@@ -33,15 +33,16 @@ registered in Orca — either with `Clone in Orca` on its page, or `orca repo ad
 
 ## Releases
 
-Each `vX.Y.Z` tag builds a GitHub Release (`.github/workflows/release.yml`) with:
+Releases are cut by [release-please](https://github.com/googleapis/release-please) from the Conventional Commits on
+`main`: it keeps a release PR open (version bump in `package.json` and `extension/manifest.json`, `CHANGELOG.md`).
+Merging that PR tags `vX.Y.Z` and creates the GitHub Release, to which the workflow (`.github/workflows/release.yml`)
+attaches:
 
 - `github-orca-chrome-X.Y.Z.zip`: unzip, then *Load unpacked* in Chrome/Arc (same extension ID as a local build);
 - `github-orca-firefox-X.Y.Z.xpi`: signed by AMO (unlisted), install it from `about:addons`.
 
 The native host is not part of a release: clone the repo and run `./scripts/install.sh` either way.
-
-To release: bump `version` in `extension/manifest.json`, commit, then `git tag vX.Y.Z && git push origin vX.Y.Z`.
-The tag must match that version. Signing needs the `WEB_EXT_API_KEY` / `WEB_EXT_API_SECRET` repository secrets.
+Signing needs the `WEB_EXT_API_KEY` / `WEB_EXT_API_SECRET` repository secrets; if it fails, re-run the failed job.
 
 ## Pull request page
 
