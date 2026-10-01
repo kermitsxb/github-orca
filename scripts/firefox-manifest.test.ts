@@ -23,9 +23,10 @@ describe('firefoxManifest', () => {
     expect(ff).not.toHaveProperty('key');
   });
 
-  it('declares the gecko id, minimum version and no data collection', () => {
+  it('declares the gecko id, no data collection, and the first versions that support data_collection_permissions', () => {
     expect(ff.browser_specific_settings).toEqual({
-      gecko: { id: 'ext@example', strict_min_version: '128.0', data_collection_permissions: { required: ['none'] } },
+      gecko: { id: 'ext@example', strict_min_version: '140.0', data_collection_permissions: { required: ['none'] } },
+      gecko_android: { strict_min_version: '142.0' },
     });
   });
 

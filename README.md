@@ -14,7 +14,7 @@ Adds two buttons to GitHub:
 4. Browser → `chrome://extensions` (Arc: `arc://extensions`) → Developer mode → *Load unpacked* → `extension/`.
    The displayed ID must match `extension/extension-id.txt`.
 
-## Install (macOS, Firefox 128+)
+## Install (macOS, Firefox 140+)
 
 1. `npm install`, then launch Firefox once (it creates the Mozilla native messaging directory) and run
    `./scripts/install.sh` (it registers the host for Chrome, Arc and Firefox, whichever are present).
