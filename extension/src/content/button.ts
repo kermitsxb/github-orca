@@ -96,8 +96,9 @@ export function createOrcaButton(key: string, send: Send, doc: Document = docume
     controls.forEach((c) => (c.disabled = true));
     showStatus('⏳ Starting in Orca…', 'busy');
     const res = await sendSafely(() => send(action, customPrompt));
-    if (res.ok && res.warning) showStatus(`⚠️ ${res.worktreeName} (reused) — ${res.warning}`, 'warning');
-    else if (res.ok) showStatus(`✅ ${res.worktreeName}${res.reused ? ' (reused)' : ''}`, 'ok');
+    const reused = res.ok && res.reused ? ' (reused)' : '';
+    if (res.ok && res.warning) showStatus(`⚠️ ${res.worktreeName}${reused} — ${res.warning}`, 'warning');
+    else if (res.ok) showStatus(`✅ ${res.worktreeName}${reused}`, 'ok');
     else showStatus(`❌ ${res.message}`, 'error');
     controls.forEach((c) => (c.disabled = false));
     busy = false;
