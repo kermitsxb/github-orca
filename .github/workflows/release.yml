@@ -48,6 +48,9 @@ jobs:
       - uses: googleapis/release-please-action@v5
         id: release
         with:
+          # A PAT or GitHub App token, so the release PR's own CI runs without manual approval: runs triggered by
+          # GITHUB_TOKEN wait for a maintainer. Falls back to GITHUB_TOKEN when the secret is not set.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
