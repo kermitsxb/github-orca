@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the project and registers the native messaging host for Chrome and Arc.
+# Builds the project and registers the native messaging host for Chrome, Arc and Firefox.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -10,6 +10,7 @@ for tool in node orca gh git; do
   command -v "$tool" >/dev/null || { echo "Not found in PATH: $tool" >&2; exit 1; }
 done
 [ -f extension/extension-id.txt ] || { echo "Run first: npm run gen-key" >&2; exit 1; }
+[ -f extension/firefox-id.txt ] || { echo "Missing extension/firefox-id.txt" >&2; exit 1; }
 
 npm run build
 
@@ -17,6 +18,7 @@ npm run build
 NODE_BIN="$(node -p 'process.execPath')"
 TOOL_PATH="$(dirname "$(command -v orca)"):$(dirname "$(command -v gh)"):$(dirname "$(command -v git)"):$(dirname "$NODE_BIN"):/usr/bin:/bin"
 EXT_ID="$(tr -d '[:space:]' < extension/extension-id.txt)"
+GECKO_ID="$(tr -d '[:space:]' < extension/firefox-id.txt)"
 WRAPPER="$ROOT/host/dist/github-orca-host"
 
 cat > "$WRAPPER" <<EOF
@@ -46,5 +48,20 @@ for browser_dir in \
     installed=1
   fi
 done
-[ "$installed" = 1 ] || { echo "Neither Chrome nor Arc found" >&2; exit 1; }
-echo "Expected extension ID: $EXT_ID"
+FIREFOX_MANIFEST="$(node -e 'console.log(JSON.stringify({
+  name: process.argv[1],
+  description: "GitHub → Orca bridge",
+  path: process.argv[2],
+  type: "stdio",
+  allowed_extensions: [process.argv[3]],
+}, null, 2))' "$HOST_NAME" "$WRAPPER" "$GECKO_ID")"
+
+MOZILLA_DIR="$HOME/Library/Application Support/Mozilla"
+if [ -d "$MOZILLA_DIR" ]; then
+  mkdir -p "$MOZILLA_DIR/NativeMessagingHosts"
+  printf '%s\n' "$FIREFOX_MANIFEST" > "$MOZILLA_DIR/NativeMessagingHosts/$HOST_NAME.json"
+  echo "Installed: $MOZILLA_DIR/NativeMessagingHosts/$HOST_NAME.json"
+  installed=1
+fi
+[ "$installed" = 1 ] || { echo "None of Chrome, Arc or Firefox found" >&2; exit 1; }
+echo "Expected extension ID: $EXT_ID (Chrome/Arc), $GECKO_ID (Firefox)"

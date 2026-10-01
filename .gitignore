@@ -4,3 +4,5 @@ host/dist/
 .nwave/
 .superpowers/
 docs/
+extension-firefox/
+web-ext-artifacts/

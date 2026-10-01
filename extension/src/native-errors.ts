@@ -1,9 +1,9 @@
 import type { HostResponse } from '../../shared/types';
 
-/** Turns a Chrome runtime / native messaging error message into a French, actionable response. */
+/** Turns a browser runtime / native messaging error message into an actionable response. */
 export function mapNativeError(message: string): HostResponse {
-  if (/not found/i.test(message)) return { ok: false, code: 'host_missing', message: 'Host not installed: run scripts/install.sh' };
-  if (/forbidden/i.test(message)) {
+  if (/not found|no such native application/i.test(message)) return { ok: false, code: 'host_missing', message: 'Host not installed: run scripts/install.sh' };
+  if (/forbidden|does not have permission/i.test(message)) {
     return { ok: false, code: 'host_missing', message: "Host refused: the extension ID does not match, re-run scripts/install.sh" };
   }
   if (/exited|communicating/i.test(message)) {

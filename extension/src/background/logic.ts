@@ -61,6 +61,8 @@ export interface PortLike {
   disconnect(): void;
   onMessage: { addListener(listener: (message: unknown) => void): void };
   onDisconnect: { addListener(listener: () => void): void };
+  /** Firefox reports native errors here rather than in runtime.lastError. */
+  error?: { message?: string } | null;
 }
 
 /**
@@ -93,7 +95,9 @@ export function sendViaPort(
       return;
     }
     port.onMessage.addListener((message) => finish(message as HostResponse, port));
-    port.onDisconnect.addListener(() => finish(mapNativeError(lastError() ?? 'Native host has exited.')));
+    port.onDisconnect.addListener(() =>
+      finish(mapNativeError(port.error?.message ?? lastError() ?? 'Native host has exited.')),
+    );
     port.postMessage(req);
   });
 }

@@ -4,7 +4,7 @@ Guidance for coding agents working in this repo. User-facing docs: [README.md](R
 
 ## What this is
 
-A Chrome/Arc MV3 extension plus a macOS native messaging host. The extension adds buttons to github.com
+A Chrome/Arc/Firefox MV3 extension plus a macOS native messaging host. The extension adds buttons to github.com
 (`Review in Orca` on PRs, `Clone in Orca` on repo pages); the host receives one JSON request per click and drives
 the `orca`, `git` and `gh` CLIs.
 
@@ -29,7 +29,15 @@ content script ──chrome.runtime.sendMessage──▶ service worker ──co
   - `background/`: `logic.ts` (testable: request building, in-flight dedup, port handling), `index.ts` (glue).
   - `options/`, `settings.ts`: options page and stored settings (`chrome.storage.sync`).
   - `pr-url.ts`, `repo-url.ts`: URL parsing that decides which page gets which button.
-- `scripts/install.sh`: builds and registers the host for Chrome and Arc (pins absolute tool paths).
+- `scripts/install.sh`: builds and registers the host for Chrome, Arc and Firefox (pins absolute tool paths).
+- `scripts/firefox-manifest.mjs`: derives the Firefox manifest from `extension/manifest.json`; the Gecko ID is in
+  `extension/firefox-id.txt`. `extension-firefox/` is the generated build output (git-ignored).
+- `scripts/sign-firefox.mjs`: reuses an existing AMO version (downloads it or waits for approval), and submits only
+  absent versions. The signed artifact is `web-ext-artifacts/github-orca-firefox-X.Y.Z.xpi`.
+- `.github/workflows/release.yml`: CI build on PRs and `main`; release-please (`release-please-config.json`,
+  `.release-please-manifest.json`) opens the release PR, and once it is merged the workflow signs the Firefox build on
+  AMO and attaches both extensions to the release (`scripts/release-version.mjs` checks tag = manifest `version`).
+  Never edit versions by hand: release-please bumps `package.json` and `extension/manifest.json`.
 - `host/test/fixtures/`: real CLI outputs, anonymized; `NOTES.md` records how they were captured.
 
 ## Commands
@@ -37,13 +45,16 @@ content script ──chrome.runtime.sendMessage──▶ service worker ──co
 ```bash
 npm test            # vitest, all *.test.ts
 npm run typecheck   # tsc --noEmit
-npm run build       # esbuild → extension/dist + host/dist/host.cjs
+npm run build       # esbuild → extension/dist + extension-firefox/ + host/dist/host.cjs
+npm run lint:firefox  # web-ext lint on extension-firefox/
+npm run sign:firefox  # AMO unlisted signing → web-ext-artifacts/ (needs WEB_EXT_API_KEY / WEB_EXT_API_SECRET)
 ```
 
-Run all three before calling a change done. After a build, the installed host already runs the new
+Run `npm test`, `npm run typecheck`, `npm run build` and `npm run lint:firefox` before calling a change done. After a build, the installed host already runs the new
 `host/dist/host.cjs` (the wrapper points into this repo); the extension must be reloaded in
-`chrome://extensions`, then the GitHub tab refreshed. Re-run `./scripts/install.sh` only when the wrapper or the
-host manifest must change.
+`chrome://extensions`, then the GitHub tab refreshed. In Firefox, press *Reload* in `about:debugging`
+(temporary add-on) or install a re-signed `.xpi` (`npm run sign:firefox`, bump `version` first). Re-run
+`./scripts/install.sh` only when the wrapper or the host manifest must change.
 
 Host smoke test without the browser:
 
