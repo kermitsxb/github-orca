@@ -42,6 +42,12 @@ describe('mapNativeError', () => {
     });
   });
 
+  it('explains a refused host under Firefox', () => {
+    expect(mapNativeError('This extension does not have permission to use native application com.stocki.github_orca (or the application is not installed)')).toMatchObject({
+      code: 'host_missing', message: expect.stringContaining('ID'),
+    });
+  });
+
   it('explains a host that stopped, pointing to the log', () => {
     for (const m of ['Native host has exited.', 'Error when communicating with the native messaging host.']) {
       expect(mapNativeError(m)).toEqual({
