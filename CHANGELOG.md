@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/kermitsxb/github-orca/compare/v0.2.0...v0.3.0) (2026-10-01)
+
+
+### Features
+
+* **host:** name a PR workspace's local branch after the PR branch ([#7](https://github.com/kermitsxb/github-orca/issues/7)) ([d2009c5](https://github.com/kermitsxb/github-orca/commit/d2009c502ddd95692e180c84e00b25129c021fa0))
+
+
+### Bug Fixes
+
+* **firefox:** raise strict_min_version to match data_collection_permissions ([#8](https://github.com/kermitsxb/github-orca/issues/8)) ([feb6257](https://github.com/kermitsxb/github-orca/commit/feb625797442ae5434ed4090739d50318b3ec6e0))
+* **host:** start PR agents after branch configuration ([#11](https://github.com/kermitsxb/github-orca/issues/11)) ([9037d01](https://github.com/kermitsxb/github-orca/commit/9037d013f58de26fd2a9b8bb0c748d1d7521a775))
+
 ## [0.2.0](https://github.com/kermitsxb/github-orca/compare/v0.1.0...v0.2.0) (2026-10-01)
 
 
