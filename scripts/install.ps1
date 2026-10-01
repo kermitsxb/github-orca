@@ -54,7 +54,9 @@ if (-not (Test-Path -LiteralPath $GeckoIdFile -PathType Leaf)) { Fail 'Missing e
 if ($env:GITHUB_ORCA_SKIP_BUILD -eq '1') {
   Write-Host 'Skipping build (GITHUB_ORCA_SKIP_BUILD=1)'
 } else {
-  & npm run build
+  # npm.cmd, not npm: PowerShell would run npm.ps1, which inherits StrictMode / ErrorActionPreference and reads
+  # $MyInvocation.Statement (PowerShell 7.4+ only), aborting the build on Windows PowerShell 5.1.
+  & npm.cmd run build
   if ($LASTEXITCODE -ne 0) { Fail "npm run build failed (exit code $LASTEXITCODE)" }
 }
 
@@ -69,8 +71,11 @@ $ToolDirs = @(
   (Split-Path -Parent $NodeBin)
 )
 $ToolPath = ((($ToolDirs | ForEach-Object { Escape-Bat $_ }) -join ';') + ';%SystemRoot%\System32;%SystemRoot%')
-$ExtId = (Get-Content -LiteralPath $ExtIdFile -Raw).Trim()
-$GeckoId = (Get-Content -LiteralPath $GeckoIdFile -Raw).Trim()
+# Get-Content -Raw returns $null for an empty file: cast before trimming.
+$ExtId = ([string](Get-Content -LiteralPath $ExtIdFile -Raw)).Trim()
+$GeckoId = ([string](Get-Content -LiteralPath $GeckoIdFile -Raw)).Trim()
+if (-not $ExtId) { Fail 'extension/extension-id.txt is empty: run npm run gen-key' }
+if (-not $GeckoId) { Fail 'extension/firefox-id.txt is empty' }
 
 $DistDir = Join-Path $Root 'host\dist'
 New-Item -ItemType Directory -Force -Path $DistDir | Out-Null

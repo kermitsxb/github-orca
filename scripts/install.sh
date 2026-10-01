@@ -89,7 +89,11 @@ else
   BROWSERS="Chrome, Chromium, Brave, Edge or Firefox"
   CHROMIUM_LABEL="Chrome/Chromium/Brave/Edge"
 
-  for sandboxed in "$HOME/snap/chromium" "$HOME/snap/firefox" "$HOME"/.var/app/*; do
+  # Only browser app ids: other flatpak apps (editors, chat…) say nothing about the browser.
+  for sandboxed in "$HOME/snap/chromium" "$HOME/snap/firefox" \
+    "$HOME/.var/app/org.mozilla.firefox" "$HOME/.var/app/org.chromium.Chromium" \
+    "$HOME/.var/app/com.google.Chrome" "$HOME/.var/app/com.brave.Browser" \
+    "$HOME/.var/app/com.microsoft.Edge"; do
     if [ -d "$sandboxed" ]; then
       echo "Warning: sandboxed (snap/flatpak) browser detected at $sandboxed: it may block native messaging." >&2
       echo "Use a non-sandboxed (deb/rpm/tarball) browser if the buttons report the host as missing." >&2
