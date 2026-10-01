@@ -71,7 +71,8 @@ export function renderOptions(root: HTMLElement, s: Settings): void {
 }
 
 const AGENT_RE = /^[a-z0-9-]{1,40}$/; // same rule as the host (host/src/validate.ts)
-const CLONE_DIR_RE = /^(~|~\/.*|\/.*)$/; // absolute or ~/…, like the host
+// absolute (POSIX or Windows drive) or ~/…; the host applies its own OS's rule
+const CLONE_DIR_RE = /^(~|~[\\/].*|\/.*|[A-Za-z]:[\\/].*)$/;
 
 /** Returns a French error message, or null when the settings can be saved. */
 export function validateSettings(s: Settings): string | null {

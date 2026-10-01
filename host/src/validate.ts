@@ -1,5 +1,5 @@
 import { homedir } from 'node:os';
-import { resolve } from 'node:path';
+import path from 'node:path';
 import { ACTIONS, type Action, type CloneRequest, type HostMessage, type HostRequest } from '../../shared/types';
 import { HostError } from './errors';
 
@@ -16,22 +16,33 @@ function isName(v: unknown): v is string {
   return typeof v === 'string' && NAME.test(v) && !/^\.+$/.test(v);
 }
 
-/** Absolute path, or `~` / `~/…` expanded against `home`; normalized (no `.`, `..`, trailing slash). */
-function parseDestination(v: unknown, home: string): string {
+type Paths = typeof path.posix;
+
+/**
+ * Absolute path, or `~` / `~/…` (and `~\…` on Windows) expanded against `home`; normalized (no `.`, `..`,
+ * trailing separator). Windows accepts drive-letter paths only (no `\foo`, `/foo`, UNC).
+ */
+function parseDestination(v: unknown, home: string, paths: Paths): string {
   if (typeof v !== 'string' || v.length > MAX_PATH || /[\x00-\x1f\x7f]/.test(v)) fail('Invalid clone folder');
-  if (v === '~' || v.startsWith('~/')) return resolve(home, `.${v.slice(1)}`);
-  if (!v.startsWith('/')) fail('Invalid clone folder: expected an absolute path or ~/…');
-  return resolve(v);
+  const win = paths === path.win32;
+  if (v === '~' || v.startsWith('~/') || (win && v.startsWith('~\\'))) return paths.resolve(home, `.${v.slice(1)}`);
+  const absolute = win ? /^[A-Za-z]:[\\/]/.test(v) : v.startsWith('/');
+  if (!absolute) fail('Invalid clone folder: expected an absolute path or ~/…');
+  return paths.resolve(v);
 }
 
-export function parseRequest(raw: unknown, home: string = homedir()): HostMessage {
+export function parseRequest(
+  raw: unknown,
+  home: string = homedir(),
+  paths: Paths = process.platform === 'win32' ? path.win32 : path.posix,
+): HostMessage {
   if (typeof raw !== 'object' || raw === null) fail('Invalid request: object expected');
   const r = raw as Record<string, unknown>;
   if (r.action !== 'clone' && !ACTIONS.includes(r.action as Action)) fail(`Unknown action: ${String(r.action)}`);
   if (!isName(r.owner)) fail('Invalid owner');
   if (!isName(r.repo)) fail('Invalid repo');
   if (r.action === 'clone') {
-    const clone: CloneRequest = { action: 'clone', owner: r.owner, repo: r.repo, destination: parseDestination(r.destination, home) };
+    const clone: CloneRequest = { action: 'clone', owner: r.owner, repo: r.repo, destination: parseDestination(r.destination, home, paths) };
     return clone;
   }
   if (typeof r.prNumber !== 'number' || !Number.isInteger(r.prNumber) || r.prNumber <= 0) fail('Invalid PR number');

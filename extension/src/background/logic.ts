@@ -74,6 +74,7 @@ export function sendViaPort(
   connect: () => PortLike,
   req: HostMessage,
   lastError: () => string | undefined = () => chrome.runtime.lastError?.message,
+  os?: string,
 ): Promise<HostResponse> {
   return new Promise((resolve) => {
     let done = false;
@@ -91,12 +92,12 @@ export function sendViaPort(
     try {
       port = connect();
     } catch (e) {
-      finish(mapNativeError(e instanceof Error ? e.message : String(e)));
+      finish(mapNativeError(e instanceof Error ? e.message : String(e), os));
       return;
     }
     port.onMessage.addListener((message) => finish(message as HostResponse, port));
     port.onDisconnect.addListener(() =>
-      finish(mapNativeError(port.error?.message ?? lastError() ?? 'Native host has exited.')),
+      finish(mapNativeError(port.error?.message ?? lastError() ?? 'Native host has exited.', os)),
     );
     port.postMessage(req);
   });

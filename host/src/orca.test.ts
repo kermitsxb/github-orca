@@ -1,8 +1,11 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { fakeRunner, fixture } from '../test/fake-runner';
 import { CommandError } from './exec';
 import { HostError } from './errors';
-import { OrcaCli, runtimeClientPath } from './orca';
+import { OrcaCli, loadOrcaRpc, runtimeClientPath } from './orca';
 
 vi.mock('./log', () => ({ log: vi.fn() }));
 
@@ -154,6 +157,91 @@ describe('OrcaCli.linkPr', () => {
       throw new Error('Cannot find module');
     };
     await expect(new OrcaCli(noRun, noMkdir, unloadable).linkPr('repo::/wt', 12)).resolves.toBeUndefined();
+  });
+});
+
+describe('OrcaCli launcher', () => {
+  const electron = 'C:\\Orca\\Orca.exe';
+  const cli = 'C:\\Orca\\resources\\app.asar.unpacked\\out\\cli\\index.js';
+  const env = { ELECTRON_RUN_AS_NODE: '1' };
+
+  it('runs the resolved launcher with its leading args and env', async () => {
+    const run = fakeRunner([[`${electron} ${cli} status`, fixture('orca-status.json')]]);
+    const orca = new OrcaCli(run, undefined, undefined, { cmd: electron, args: [cli], env });
+    expect(await orca.isReachable()).toBe(true);
+    expect(run.calls[0]).toEqual({ cmd: electron, args: [cli, 'status', '--json'], opts: { timeoutMs: 30_000, env } });
+  });
+
+  it('uses the launcher for `open` too', async () => {
+    const run = fakeRunner([[`${electron} ${cli} open`, '']]);
+    await new OrcaCli(run, undefined, undefined, { cmd: electron, args: [cli], env }).open();
+    expect(run.calls[0]).toMatchObject({ cmd: electron, args: [cli, 'open'], opts: { env } });
+  });
+
+  it('resolves a lazy launcher once', async () => {
+    const ok = JSON.stringify({ ok: true, result: {} });
+    const run = fakeRunner([['orca', ok]]);
+    const resolve = vi.fn(() => ({ cmd: 'orca', args: [] }));
+    const orca = new OrcaCli(run, undefined, undefined, resolve);
+    expect(resolve).not.toHaveBeenCalled();
+    await orca.setStatus('w', 's');
+    await orca.setStatus('w', 's');
+    expect(resolve).toHaveBeenCalledTimes(1);
+  });
+
+  it('surfaces a launcher that cannot be resolved as its HostError', async () => {
+    const run = fakeRunner([]);
+    const missing = new HostError('orca_unavailable', 'Orca CLI not found on PATH (orca)');
+    const resolve = vi.fn(() => {
+      throw missing;
+    });
+    const orca = new OrcaCli(run, undefined, undefined, resolve);
+    await expect(orca.isReachable()).rejects.toBe(missing);
+    await expect(orca.findProject('o', 'r')).rejects.toBe(missing);
+    await expect(orca.open()).rejects.toBe(missing);
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(run.calls).toEqual([]);
+  });
+
+  it('loads the runtime RPC from the launcher\'s runtime client', async () => {
+    const rpc = vi.fn().mockResolvedValue({});
+    const loadRpc = vi.fn(async () => rpc);
+    const launcher = { cmd: 'orca', args: [], runtimeClient: '/opt/Orca/out/cli/runtime-client.js' };
+    await new OrcaCli(fakeRunner([]), vi.fn(), loadRpc, launcher).linkPr('w', 3);
+    expect(loadRpc).toHaveBeenCalledWith('/opt/Orca/out/cli/runtime-client.js', undefined);
+    expect(rpc).toHaveBeenCalled();
+  });
+
+  it.each(['/home/me/.config/custom-orca', 'C:\\Users\\me\\AppData\\Roaming\\custom-orca'])(
+    'loads the RPC using the launcher profile %s', async (userDataPath) => {
+      const rpc = vi.fn().mockResolvedValue({});
+      const loadRpc = vi.fn(async () => rpc);
+      const launcher = { cmd: 'orca', args: [], runtimeClient: '/opt/Orca/out/cli/runtime-client.js', userDataPath };
+      await new OrcaCli(fakeRunner([]), vi.fn(), loadRpc, launcher).linkPr('w', 3);
+      expect(loadRpc).toHaveBeenCalledWith('/opt/Orca/out/cli/runtime-client.js', userDataPath);
+      expect(rpc).toHaveBeenCalledWith('worktree.set', { worktree: 'id:w', linkedPR: 3 });
+    },
+  );
+});
+
+describe('loadOrcaRpc', () => {
+  it('constructs the runtime client with the CLI profile instead of the host default', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'orca-rpc-test-'));
+    try {
+      const runtimeClient = path.join(dir, 'runtime-client.cjs');
+      await writeFile(runtimeClient, `exports.RuntimeClient = class {
+        constructor(userDataPath = 'default-profile') { this.userDataPath = userDataPath; }
+        async call() { return { userDataPath: this.userDataPath }; }
+      };`);
+      const rpc = await loadOrcaRpc(runtimeClient, '/home/me/.config/custom-orca');
+      expect(await rpc('worktree.set', {})).toEqual({ userDataPath: '/home/me/.config/custom-orca' });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('fails without a runtime client path', async () => {
+    await expect(loadOrcaRpc(undefined)).rejects.toThrow();
   });
 });
 

@@ -48,13 +48,35 @@ describe('mapNativeError', () => {
     });
   });
 
-  it('explains a host that stopped, pointing to the log', () => {
+  it('explains a host that stopped, with a generic log hint when the OS is unknown', () => {
     for (const m of ['Native host has exited.', 'Error when communicating with the native messaging host.']) {
       expect(mapNativeError(m)).toEqual({
         ok: false, code: 'internal',
-        message: "The native host stopped: see ~/Library/Logs/github-orca/host.log or re-run scripts/install.sh",
+        message: 'The native host stopped: see the host log (README \u2192 Troubleshooting) or re-run scripts/install.sh',
       });
     }
+  });
+
+  it.each([
+    ['mac', '~/Library/Logs/github-orca/host.log', 'scripts/install.sh'],
+    ['linux', '~/.local/state/github-orca/host.log', 'scripts/install.sh'],
+    ['win', '%LOCALAPPDATA%\\github-orca\\logs\\host.log', 'scripts\\install.ps1'],
+  ])('points to the %s log and installer', (os, log, installer) => {
+    expect(mapNativeError('Native host has exited.', os)).toEqual({
+      ok: false, code: 'internal', message: `The native host stopped: see ${log} or re-run ${installer}`,
+    });
+    expect(mapNativeError('Specified native messaging host not found.', os)).toMatchObject({
+      message: `Host not installed: run ${installer}`,
+    });
+    expect(mapNativeError('Access to the specified native messaging host is forbidden.', os)).toMatchObject({
+      message: expect.stringContaining(`re-run ${installer}`),
+    });
+  });
+
+  it('falls back to the generic log hint and install.sh for other platforms', () => {
+    expect(mapNativeError('Native host has exited.', 'openbsd')).toMatchObject({
+      message: 'The native host stopped: see the host log (README \u2192 Troubleshooting) or re-run scripts/install.sh',
+    });
   });
 
   it('explains a reloaded extension', () => {
@@ -133,7 +155,19 @@ describe('sendViaPort', () => {
     const port = new FakePort();
     const p = sendViaPort(() => port, req, () => undefined);
     port.emitDisconnect();
-    expect(await p).toMatchObject({ ok: false, code: 'internal', message: expect.stringContaining('host.log') });
+    expect(await p).toMatchObject({ ok: false, code: 'internal', message: expect.stringContaining('host log') });
+  });
+
+  it('maps a disconnect using the given os', async () => {
+    const port = new FakePort();
+    const p = sendViaPort(() => port, req, () => 'Specified native messaging host not found.', 'win');
+    port.emitDisconnect();
+    expect(await p).toMatchObject({ message: 'Host not installed: run scripts\\install.ps1' });
+  });
+
+  it('maps a connect failure using the given os', async () => {
+    const p = sendViaPort(() => { throw new Error('Native host has exited.'); }, req, () => undefined, 'linux');
+    expect(await p).toMatchObject({ message: expect.stringContaining('~/.local/state/github-orca/host.log') });
   });
 
   it('maps lastError "not found" on disconnect to host_missing', async () => {

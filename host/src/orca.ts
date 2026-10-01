@@ -1,10 +1,9 @@
-import { realpathSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { delimiter, join, resolve } from 'node:path';
 import { HostError, toHostError } from './errors';
 import type { Runner } from './exec';
 import { log } from './log';
+import type { OrcaLauncher } from './orca-launcher';
 import type { CloneOptions, CreateWorktreeOptions, OrcaApi, ProjectRef, WorktreeInfo } from './ports';
 
 type Json = Record<string, any>;
@@ -42,27 +41,13 @@ function toWorktreeInfo(w: Json): WorktreeInfo {
 /** A call on Orca's runtime RPC, for metadata the `orca` CLI has no flag for. */
 export type OrcaRpc = (method: string, params: Json) => Promise<unknown>;
 
-/** Orca ships its CLI's runtime client next to the `orca` binary: <Resources>/bin/orca → <Resources>/app.asar.unpacked/… */
-export function runtimeClientPath(orcaBinary: string): string {
-  return resolve(orcaBinary, '..', '..', 'app.asar.unpacked', 'out', 'cli', 'runtime-client.js');
-}
-
-function findOnPath(cmd: string): string {
-  for (const dir of (process.env.PATH ?? '').split(delimiter)) {
-    try {
-      return realpathSync(join(dir, cmd));
-    } catch {
-      // not in this directory
-    }
-  }
-  throw new Error(`${cmd} not found on PATH`);
-}
+export { runtimeClientPath } from './orca-launcher';
 
 /** Loads Orca's own runtime client (same socket and auth as the CLI). Internal API: callers must tolerate failure. */
-export async function loadOrcaRpc(): Promise<OrcaRpc> {
-  const path = runtimeClientPath(findOnPath('orca'));
-  const { RuntimeClient } = createRequire(path)(path);
-  const client = new RuntimeClient();
+export async function loadOrcaRpc(runtimeClient?: string, userDataPath?: string): Promise<OrcaRpc> {
+  if (!runtimeClient) throw new Error('Orca runtime client location unknown');
+  const { RuntimeClient } = createRequire(runtimeClient)(runtimeClient);
+  const client = new RuntimeClient(userDataPath);
   return (method, params) => client.call(method, params);
 }
 
@@ -70,19 +55,38 @@ export class OrcaCli implements OrcaApi {
   constructor(
     private readonly run: Runner,
     private readonly makeDir: (path: string) => Promise<unknown> = (path) => mkdir(path, { recursive: true }),
-    private readonly loadRpc: () => Promise<OrcaRpc> = loadOrcaRpc,
+    private readonly loadRpc: (runtimeClient?: string, userDataPath?: string) => Promise<OrcaRpc> = loadOrcaRpc,
+    /** A function is resolved lazily, at most once: a missing CLI then fails the request, not the host. */
+    private readonly launcher: OrcaLauncher | (() => OrcaLauncher) = { cmd: 'orca', args: [] },
   ) {}
+
+  private resolved?: { launcher: OrcaLauncher } | { error: unknown };
+
+  private getLauncher(): OrcaLauncher {
+    if (!this.resolved) {
+      try {
+        this.resolved = { launcher: typeof this.launcher === 'function' ? this.launcher() : this.launcher };
+      } catch (error) {
+        this.resolved = { error };
+      }
+    }
+    if ('error' in this.resolved) throw this.resolved.error;
+    return this.resolved.launcher;
+  }
 
   private async call(args: string[], timeoutMs = 30_000): Promise<Json> {
     try {
-      const { stdout } = await this.run('orca', [...args, '--json'], { timeoutMs });
+      const l = this.getLauncher();
+      const { stdout } = await this.run(l.cmd, [...l.args, ...args, '--json'], { timeoutMs, env: l.env });
       return parseOrcaJson(stdout);
     } catch (e) {
       throw toHostError(e, 'orca_failed');
     }
   }
 
+  /** A launcher that cannot be resolved rejects with its HostError: "not responding" would hide the real cause. */
   async isReachable(): Promise<boolean> {
+    this.getLauncher();
     try {
       const result = await this.call(['status']);
       return result.runtime?.reachable === true;
@@ -92,8 +96,9 @@ export class OrcaCli implements OrcaApi {
   }
 
   async open(): Promise<void> {
+    const l = this.getLauncher();
     try {
-      await this.run('orca', ['open'], { timeoutMs: 60_000 });
+      await this.run(l.cmd, [...l.args, 'open'], { timeoutMs: 60_000, env: l.env });
     } catch {
       // isReachable() decides afterwards whether Orca came up
     }
@@ -143,7 +148,8 @@ export class OrcaCli implements OrcaApi {
 
   async linkPr(worktreeId: string, prNumber: number, pushBranch?: string): Promise<void> {
     try {
-      const rpc = await this.loadRpc();
+      const launcher = this.getLauncher();
+      const rpc = await this.loadRpc(launcher.runtimeClient, launcher.userDataPath);
       await rpc('worktree.set', {
         worktree: `id:${worktreeId}`,
         linkedPR: prNumber,
