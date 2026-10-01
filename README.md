@@ -44,6 +44,8 @@ attaches:
 
 The native host is not part of a release: clone the repo and run `./scripts/install.sh` either way.
 Signing needs the `WEB_EXT_API_KEY` / `WEB_EXT_API_SECRET` repository secrets; if it fails, re-run the failed job.
+release-please uses the `RELEASE_PLEASE_TOKEN` secret when set (fine-grained PAT on this repo with *Contents* and
+*Pull requests* read/write), so the release PR's build runs on its own; without it, approve that run by hand.
 The release is created only after the build passes. Retries recover the XPI from AMO if that version was already
 submitted, including after an approval timeout or a failed download/upload.
 
