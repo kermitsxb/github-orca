@@ -36,6 +36,7 @@ jobs:
 
   release-please:
     if: github.event_name == 'push'
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -72,7 +73,7 @@ jobs:
         run: |
           version="$(node scripts/release-version.mjs "$TAG")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Sign Firefox (AMO, unlisted)
+      - name: Sign or retrieve Firefox (AMO, unlisted)
         run: npm run sign:firefox # builds first
         env:
           WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
@@ -83,5 +84,4 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           (cd extension && zip -r "../github-orca-chrome-$VERSION.zip" manifest.json options.html dist)
-          mv web-ext-artifacts/*.xpi "github-orca-firefox-$VERSION.xpi"
-          gh release upload "$TAG" --clobber "github-orca-chrome-$VERSION.zip" "github-orca-firefox-$VERSION.xpi"
+          gh release upload "$TAG" --clobber "github-orca-chrome-$VERSION.zip" "web-ext-artifacts/github-orca-firefox-$VERSION.xpi"

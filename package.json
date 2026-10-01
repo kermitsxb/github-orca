@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "gen-key": "node scripts/gen-key.mjs",
     "lint:firefox": "npm run build && web-ext lint --source-dir extension-firefox",
-    "sign:firefox": "npm run build && web-ext sign --channel=unlisted --source-dir extension-firefox --artifacts-dir web-ext-artifacts"
+    "sign:firefox": "npm run build && node scripts/sign-firefox.mjs"
   },
   "keywords": [],
   "author": "",
