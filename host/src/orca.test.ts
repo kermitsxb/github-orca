@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { fakeRunner, fixture } from '../test/fake-runner';
 import { CommandError } from './exec';
 import { HostError } from './errors';
-import { OrcaCli } from './orca';
+import { OrcaCli, runtimeClientPath } from './orca';
+
+vi.mock('./log', () => ({ log: vi.fn() }));
 
 const projects = fixture('orca-project-list.json');
 const repos = fixture('orca-repo-list.json');
@@ -123,6 +125,43 @@ describe('OrcaCli.setStatus / reveal', () => {
     await orca.reveal('repo::/wt');
     expect(run.calls[0].args).toEqual(['worktree', 'set', '--worktree', 'id:repo::/wt', '--workspace-status', 'in-review', '--json']);
     expect(run.calls[1].args).toEqual(['terminal', 'create', '--worktree', 'id:repo::/wt', '--focus', '--json']);
+  });
+});
+
+describe('OrcaCli.linkPr', () => {
+  const noRun = fakeRunner([]);
+  const noMkdir = vi.fn();
+
+  it('sets linkedPR and the push target through the runtime RPC (the CLI has no flag for them)', async () => {
+    const rpc = vi.fn().mockResolvedValue({ result: { worktree: { linkedPR: 12 } } });
+    await new OrcaCli(noRun, noMkdir, async () => rpc).linkPr('repo::/wt', 12, 'fix/login');
+    expect(rpc).toHaveBeenCalledWith('worktree.set', {
+      worktree: 'id:repo::/wt', linkedPR: 12, pushTarget: { remoteName: 'origin', branchName: 'fix/login' },
+    });
+    expect(noRun.calls).toEqual([]);
+  });
+
+  it('sets linkedPR alone when there is no push branch (fork PR)', async () => {
+    const rpc = vi.fn().mockResolvedValue({});
+    await new OrcaCli(noRun, noMkdir, async () => rpc).linkPr('repo::/wt', 12);
+    expect(rpc).toHaveBeenCalledWith('worktree.set', { worktree: 'id:repo::/wt', linkedPR: 12 });
+  });
+
+  it('is best effort: a missing or failing runtime client does not throw', async () => {
+    const failing = vi.fn().mockRejectedValue(new Error('runtime_unavailable'));
+    await expect(new OrcaCli(noRun, noMkdir, async () => failing).linkPr('repo::/wt', 12)).resolves.toBeUndefined();
+    const unloadable = async () => {
+      throw new Error('Cannot find module');
+    };
+    await expect(new OrcaCli(noRun, noMkdir, unloadable).linkPr('repo::/wt', 12)).resolves.toBeUndefined();
+  });
+});
+
+describe('runtimeClientPath', () => {
+  it('finds the runtime client next to the orca binary inside the app bundle', () => {
+    expect(runtimeClientPath('/Applications/Orca.app/Contents/Resources/bin/orca')).toBe(
+      '/Applications/Orca.app/Contents/Resources/app.asar.unpacked/out/cli/runtime-client.js',
+    );
   });
 });
 

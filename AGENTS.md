@@ -69,6 +69,9 @@ It runs for real against Orca: use a repo already in Orca, or expect a real clon
   shape (`orca <cmd> --help`, a captured fixture, or Orca's CLI sources in
   `/Applications/Orca.app/Contents/Resources/app.asar.unpacked/out/cli/`).
 - Orca project ids are lower-cased `github:<owner>/<repo>`.
+- Worktree metadata the CLI has no flag for (`linkedPR`, `pushTarget`) goes through Orca's runtime RPC, loaded
+  from the app bundle next to the `orca` binary (`loadOrcaRpc` in `orca.ts`). It is an internal API: such calls are
+  best effort (log on failure, never fail the request).
 - A new host action = new member of `HostMessage`, a branch in `parseRequest` and `handleRequest`, a message type
   in the worker, and an in-flight key that cannot collide with existing ones.
 
