@@ -58,7 +58,7 @@ describe('orcaCommandName', () => {
   it('names the launcher per platform (never the GNOME screen reader on Linux)', () => {
     expect(orcaCommandName('darwin')).toBe('orca');
     expect(orcaCommandName('linux')).toBe('orca-ide');
-    expect(orcaCommandName('win32')).toBe('orca.cmd');
+    expect(orcaCommandName('win32')).toBe('orca.exe');
   });
 });
 
@@ -95,6 +95,46 @@ describe('parseLauncherVars', () => {
 });
 
 describe('resolveOrcaLauncher', () => {
+  it('runs the packaged Windows executable without reading it as a script', () => {
+    const fs = fakeFs({ 'C:\\Orca\\resources\\bin\\orca.exe': 'binary' });
+    const readFile = vi.fn(fs.readFile);
+    expect(resolveOrcaLauncher({ platform: 'win32', pathEnv: 'C:\\Orca\\resources\\bin', env: {}, ...fs, readFile })).toEqual({
+      cmd: 'C:\\Orca\\resources\\bin\\orca.exe', args: [],
+      runtimeClient: 'C:\\Orca\\resources\\app.asar.unpacked\\out\\cli\\runtime-client.js',
+    });
+    expect(readFile).not.toHaveBeenCalled();
+  });
+
+  it('prefers the packaged executable over a legacy cmd launcher on PATH', () => {
+    const fs = fakeFs({
+      'C:\\Legacy\\orca.cmd': winLauncher,
+      'C:\\Orca\\resources\\bin\\orca.exe': 'binary',
+    });
+    expect(resolveOrcaLauncher({ platform: 'win32', pathEnv: 'C:\\Legacy;C:\\Orca\\resources\\bin', env: {}, ...fs }).cmd).toBe(
+      'C:\\Orca\\resources\\bin\\orca.exe',
+    );
+  });
+
+  it('follows a Windows cmd forwarder to the packaged executable', () => {
+    const fs = fakeFs({
+      'C:\\Commands\\orca.cmd': winForwarder('C:\\Orca\\resources\\bin\\orca.exe'),
+      'C:\\Orca\\resources\\bin\\orca.exe': 'binary',
+    });
+    expect(resolveOrcaLauncher({ platform: 'win32', pathEnv: 'C:\\Commands', env: {}, ...fs })).toEqual({
+      cmd: 'C:\\Orca\\resources\\bin\\orca.exe', args: [],
+      runtimeClient: 'C:\\Orca\\resources\\app.asar.unpacked\\out\\cli\\runtime-client.js',
+    });
+  });
+
+  it('locates the Windows runtime client relative to the executable symlink target', () => {
+    const fs = fakeFs({ 'C:\\Orca\\resources\\bin\\orca.exe': 'binary' }, {
+      'C:\\Commands\\orca.exe': 'C:\\Orca\\resources\\bin\\orca.exe',
+    });
+    expect(resolveOrcaLauncher({ platform: 'win32', pathEnv: 'C:\\Commands', env: {}, ...fs }).runtimeClient).toBe(
+      'C:\\Orca\\resources\\app.asar.unpacked\\out\\cli\\runtime-client.js',
+    );
+  });
+
   it('keeps the plain `orca` command on macOS and finds the runtime client inside the app bundle', () => {
     const fs = fakeFs(
       { '/Applications/Orca.app/Contents/Resources/bin/orca': '#!/bin/bash' },
@@ -115,6 +155,7 @@ describe('resolveOrcaLauncher', () => {
       cmd: '/home/me/.local/bin/orca-ide',
       args: [],
       runtimeClient: '/opt/Orca/resources/app.asar.unpacked/out/cli/runtime-client.js',
+      userDataPath: '/home/me/.config/Orca',
     });
   });
 
@@ -156,6 +197,7 @@ describe('resolveOrcaLauncher', () => {
         NODE_REPL_EXTERNAL_MODULE: '',
       },
       runtimeClient: 'C:\\Users\\me\\AppData\\Local\\Programs\\Orca\\resources\\app.asar.unpacked\\out\\cli\\runtime-client.js',
+      userDataPath: 'C:\\Users\\me\\AppData\\Roaming\\Orca',
     });
   });
 
@@ -221,5 +263,18 @@ describe('resolveOrcaLauncher', () => {
       code: 'orca_unavailable',
       message: 'Orca CLI not found on PATH (orca): enable the shell command in Orca, then re-run the install script',
     });
+  });
+
+  it('reports both supported Windows launchers when neither is on PATH', () => {
+    expect(() => resolveOrcaLauncher({ platform: 'win32', pathEnv: 'C:\\Commands', env: {}, ...fakeFs({}) })).toThrow(
+      'Orca CLI not found on PATH (orca.exe or orca.cmd)',
+    );
+  });
+
+  it('reports a stale Windows executable forwarder as orca_unavailable', () => {
+    const fs = fakeFs({ 'C:\\Commands\\orca.cmd': winForwarder('C:\\Orca\\resources\\bin\\orca.exe') });
+    expect(() => resolveOrcaLauncher({ platform: 'win32', pathEnv: 'C:\\Commands', env: {}, ...fs })).toThrow(
+      'Unrecognised Orca launcher: C:\\Commands\\orca.cmd',
+    );
   });
 });

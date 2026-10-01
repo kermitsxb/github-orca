@@ -44,10 +44,10 @@ export type OrcaRpc = (method: string, params: Json) => Promise<unknown>;
 export { runtimeClientPath } from './orca-launcher';
 
 /** Loads Orca's own runtime client (same socket and auth as the CLI). Internal API: callers must tolerate failure. */
-export async function loadOrcaRpc(runtimeClient?: string): Promise<OrcaRpc> {
+export async function loadOrcaRpc(runtimeClient?: string, userDataPath?: string): Promise<OrcaRpc> {
   if (!runtimeClient) throw new Error('Orca runtime client location unknown');
   const { RuntimeClient } = createRequire(runtimeClient)(runtimeClient);
-  const client = new RuntimeClient();
+  const client = new RuntimeClient(userDataPath);
   return (method, params) => client.call(method, params);
 }
 
@@ -55,7 +55,7 @@ export class OrcaCli implements OrcaApi {
   constructor(
     private readonly run: Runner,
     private readonly makeDir: (path: string) => Promise<unknown> = (path) => mkdir(path, { recursive: true }),
-    private readonly loadRpc: (runtimeClient?: string) => Promise<OrcaRpc> = loadOrcaRpc,
+    private readonly loadRpc: (runtimeClient?: string, userDataPath?: string) => Promise<OrcaRpc> = loadOrcaRpc,
     /** A function is resolved lazily, at most once: a missing CLI then fails the request, not the host. */
     private readonly launcher: OrcaLauncher | (() => OrcaLauncher) = { cmd: 'orca', args: [] },
   ) {}
@@ -148,7 +148,8 @@ export class OrcaCli implements OrcaApi {
 
   async linkPr(worktreeId: string, prNumber: number, pushBranch?: string): Promise<void> {
     try {
-      const rpc = await this.loadRpc(this.getLauncher().runtimeClient);
+      const launcher = this.getLauncher();
+      const rpc = await this.loadRpc(launcher.runtimeClient, launcher.userDataPath);
       await rpc('worktree.set', {
         worktree: `id:${worktreeId}`,
         linkedPR: prNumber,

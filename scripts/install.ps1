@@ -14,10 +14,12 @@ function Fail([string]$Message) {
   exit 1
 }
 
-function Find-Tool([string]$Name, [string]$Hint) {
-  $cmd = Get-Command $Name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-  if (-not $cmd) { Fail "Not found in PATH: $Name$Hint" }
-  return $cmd.Source
+function Find-Tool([string[]]$Names, [string]$Hint) {
+  foreach ($name in $Names) {
+    $cmd = Get-Command $name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($cmd) { return $cmd.Source }
+  }
+  Fail "Not found in PATH: $($Names -join ' or ')$Hint"
 }
 
 function Write-Utf8File([string]$Path, [string]$Content) {
@@ -42,7 +44,7 @@ $Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $Root
 
 $NodeCmd = Find-Tool 'node' ''
-$OrcaCmd = Find-Tool 'orca.cmd' " (Orca $Arrow Settings $Arrow enable the shell command)"
+$OrcaCmd = Find-Tool @('orca.exe', 'orca.cmd') " (Orca $Arrow Settings $Arrow enable the shell command)"
 $GhCmd = Find-Tool 'gh' ''
 $GitCmd = Find-Tool 'git' ''
 

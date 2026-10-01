@@ -24,7 +24,8 @@ content script ──chrome.runtime.sendMessage──▶ service worker ──co
   - `handler.ts`: orchestration (PR workspaces create/reuse, clone), pure over the `ports.ts` interfaces.
   - `orca.ts`, `git.ts`, `gh.ts`: CLI adapters; `exec.ts` is the `execFile` runner.
   - `orca-launcher.ts`: finds Orca's CLI launcher on `PATH` per OS and turns it into an argv (on Windows, the
-    Electron binary named in `orca.cmd`, never `cmd.exe`). Resolved lazily: an invalid request never touches it.
+    packaged `orca.exe`, or the Electron binary named in legacy `orca.cmd`, never `cmd.exe`). Resolved lazily:
+    an invalid request never touches it.
   - `log-dir.ts`: per-OS log folder (macOS `~/Library/Logs/github-orca`, Linux `$XDG_STATE_HOME/github-orca` or
     `~/.local/state/github-orca`, Windows `%LOCALAPPDATA%\github-orca\logs`).
 - `extension/src/`
@@ -106,11 +107,13 @@ CI runs them against stub Orca launchers.
   `/Applications/Orca.app/Contents/Resources/app.asar.unpacked/out/cli/`, on Linux and Windows in
   `<install dir>/resources/app.asar.unpacked/out/cli/`).
 - Orca project ids are lower-cased `github:<owner>/<repo>`.
-- Orca's CLI launcher per OS: `orca` (macOS), `orca-ide` (Linux), `orca.cmd` (Windows). Never run `orca` on Linux
-  (usually the GNOME screen reader). Never route PR titles or prompts through `cmd.exe` or a shell.
+- Orca's CLI launcher per OS: `orca` (macOS), `orca-ide` (Linux), `orca.exe` (Windows; legacy `orca.cmd` is also
+  supported). Never run `orca` on Linux (usually the GNOME screen reader). Never route PR titles or prompts
+  through `cmd.exe` or a shell.
 - Worktree metadata the CLI has no flag for (`linkedPR`, `pushTarget`) goes through Orca's runtime RPC, loaded
   from `runtime-client.js` next to Orca's CLI (`loadOrcaRpc` in `orca.ts`, located by `orca-launcher.ts`; unknown
-  for a Linux AppImage). It is an internal API: such calls are best effort (log on failure, never fail the request).
+  for a Linux AppImage), with the launcher's `userDataPath` passed to `RuntimeClient`. It is an internal API:
+  such calls are best effort (log on failure, never fail the request).
 - A new host action = new member of `HostMessage`, a branch in `parseRequest` and `handleRequest`, a message type
   in the worker, and an in-flight key that cannot collide with existing ones.
 

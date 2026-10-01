@@ -69,7 +69,8 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $stub = Join-Path $env:RUNNER_TEMP 'orca-stub'
           New-Item -ItemType Directory -Force -Path $stub | Out-Null
-          Set-Content -LiteralPath (Join-Path $stub 'orca.cmd') -Value "@echo off`r`nexit /b 0" -Encoding ascii
+          # The invalid frame never invokes Orca; use a real executable to test native launcher discovery.
+          Copy-Item -LiteralPath "$env:SystemRoot\System32\where.exe" -Destination (Join-Path $stub 'orca.exe')
           $env:PATH = "$stub;$env:PATH"
           # No GITHUB_ORCA_SKIP_BUILD here: exercise install.ps1's own `npm run build` under Windows PowerShell 5.1.
           powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1
@@ -84,6 +85,14 @@ jobs:
           }
           node scripts/host-smoke.mjs host\dist\github-orca-host.bat
           if ($LASTEXITCODE -ne 0) { throw "host smoke test failed (exit code $LASTEXITCODE)" }
+          # Also exercise discovery of legacy cmd launchers, without repeating the build.
+          Remove-Item -LiteralPath (Join-Path $stub 'orca.exe')
+          Set-Content -LiteralPath (Join-Path $stub 'orca.cmd') -Value "@echo off`r`nexit /b 0" -Encoding ascii
+          $env:GITHUB_ORCA_SKIP_BUILD = '1'
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1
+          if ($LASTEXITCODE -ne 0) { throw "legacy install.ps1 failed (exit code $LASTEXITCODE)" }
+          node scripts/host-smoke.mjs host\dist\github-orca-host.bat
+          if ($LASTEXITCODE -ne 0) { throw "legacy host smoke test failed (exit code $LASTEXITCODE)" }
       - name: Lint the Firefox build
         if: runner.os == 'Linux'
         run: npm run lint:firefox # builds first

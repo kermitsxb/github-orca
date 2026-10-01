@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { fakeRunner, fixture } from '../test/fake-runner';
 import { CommandError } from './exec';
@@ -205,12 +208,38 @@ describe('OrcaCli launcher', () => {
     const loadRpc = vi.fn(async () => rpc);
     const launcher = { cmd: 'orca', args: [], runtimeClient: '/opt/Orca/out/cli/runtime-client.js' };
     await new OrcaCli(fakeRunner([]), vi.fn(), loadRpc, launcher).linkPr('w', 3);
-    expect(loadRpc).toHaveBeenCalledWith('/opt/Orca/out/cli/runtime-client.js');
+    expect(loadRpc).toHaveBeenCalledWith('/opt/Orca/out/cli/runtime-client.js', undefined);
     expect(rpc).toHaveBeenCalled();
   });
+
+  it.each(['/home/me/.config/custom-orca', 'C:\\Users\\me\\AppData\\Roaming\\custom-orca'])(
+    'loads the RPC using the launcher profile %s', async (userDataPath) => {
+      const rpc = vi.fn().mockResolvedValue({});
+      const loadRpc = vi.fn(async () => rpc);
+      const launcher = { cmd: 'orca', args: [], runtimeClient: '/opt/Orca/out/cli/runtime-client.js', userDataPath };
+      await new OrcaCli(fakeRunner([]), vi.fn(), loadRpc, launcher).linkPr('w', 3);
+      expect(loadRpc).toHaveBeenCalledWith('/opt/Orca/out/cli/runtime-client.js', userDataPath);
+      expect(rpc).toHaveBeenCalledWith('worktree.set', { worktree: 'id:w', linkedPR: 3 });
+    },
+  );
 });
 
 describe('loadOrcaRpc', () => {
+  it('constructs the runtime client with the CLI profile instead of the host default', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'orca-rpc-test-'));
+    try {
+      const runtimeClient = path.join(dir, 'runtime-client.cjs');
+      await writeFile(runtimeClient, `exports.RuntimeClient = class {
+        constructor(userDataPath = 'default-profile') { this.userDataPath = userDataPath; }
+        async call() { return { userDataPath: this.userDataPath }; }
+      };`);
+      const rpc = await loadOrcaRpc(runtimeClient, '/home/me/.config/custom-orca');
+      expect(await rpc('worktree.set', {})).toEqual({ userDataPath: '/home/me/.config/custom-orca' });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('fails without a runtime client path', async () => {
     await expect(loadOrcaRpc(undefined)).rejects.toThrow();
   });

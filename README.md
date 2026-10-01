@@ -9,7 +9,8 @@ Adds two buttons to GitHub:
 ## Requirements
 
 - Orca installed (it is started if needed), with its **shell command** enabled
-  (Orca → Settings → enable the shell command): `orca` on macOS, `orca-ide` on Linux, `orca.cmd` on Windows.
+  (Orca → Settings → enable the shell command): `orca` on macOS, `orca-ide` on Linux, `orca.exe` on Windows
+  (legacy `orca.cmd` also supported).
   On Linux, `orca` is usually the GNOME screen reader: the host never runs it.
 - Node.js, `git`, and the GitHub CLI with `gh auth login` done.
 - For PR actions, the repo registered in Orca — either with `Clone in Orca` on its page, or
@@ -150,8 +151,8 @@ Clone in Orca only clones and registers the repo: it creates no worktree and sta
   - Linux: `$XDG_STATE_HOME/github-orca/host.log` (default `~/.local/state/github-orca/host.log`);
   - Windows: `%LOCALAPPDATA%\github-orca\logs\host.log`.
 - “The native host stopped” → read the host log, or re-run the installer.
-- `Not found in PATH: orca-ide` / `orca.cmd` / `orca` from the installer, or Orca errors in the host log → enable
-  Orca's shell command (Orca → Settings), then re-run the installer.
+- `Not found in PATH: orca-ide` / `orca.exe or orca.cmd` / `orca` from the installer, or Orca errors in the host
+  log → enable Orca's shell command (Orca → Settings), then re-run the installer.
 - `git fetch` fails with a credentials error → the host is started by the browser and does not inherit variables
   exported only in your shell profile (e.g. `SSH_AUTH_SOCK` in `.zshrc` / `.bashrc`); git also runs with
   `GIT_TERMINAL_PROMPT=0`. Use an https remote (with `gh auth setup-git`), or an ssh-agent the browser can see:
