@@ -30,6 +30,12 @@ describe('mapNativeError', () => {
     });
   });
 
+  it('explains a missing host under Firefox', () => {
+    expect(mapNativeError('No such native application com.stocki.github_orca')).toEqual({
+      ok: false, code: 'host_missing', message: 'Host not installed: run scripts/install.sh',
+    });
+  });
+
   it('explains a forbidden host (extension ID mismatch)', () => {
     expect(mapNativeError('Access to the specified native messaging host is forbidden.')).toMatchObject({
       code: 'host_missing', message: expect.stringContaining('ID'),
@@ -92,6 +98,7 @@ describe('createInFlight', () => {
 class FakePort implements PortLike {
   posted: unknown[] = [];
   disconnected = false;
+  error: { message?: string } | null = null;
   private msgListeners: Array<(m: unknown) => void> = [];
   private discListeners: Array<() => void> = [];
   onMessage = { addListener: (f: (m: unknown) => void) => void this.msgListeners.push(f) };
@@ -124,6 +131,21 @@ describe('sendViaPort', () => {
   });
 
   it('maps lastError "not found" on disconnect to host_missing', async () => {
+    const port = new FakePort();
+    const p = sendViaPort(() => port, req, () => 'Specified native messaging host not found.');
+    port.emitDisconnect();
+    expect(await p).toMatchObject({ ok: false, code: 'host_missing' });
+  });
+
+  it('prefers port.error (Firefox) over lastError on disconnect', async () => {
+    const port = new FakePort();
+    const p = sendViaPort(() => port, req, () => undefined);
+    port.error = { message: 'No such native application com.stocki.github_orca' };
+    port.emitDisconnect();
+    expect(await p).toMatchObject({ ok: false, code: 'host_missing' });
+  });
+
+  it('falls back to lastError when port.error is null (Chrome)', async () => {
     const port = new FakePort();
     const p = sendViaPort(() => port, req, () => 'Specified native messaging host not found.');
     port.emitDisconnect();
