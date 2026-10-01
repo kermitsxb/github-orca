@@ -78,21 +78,24 @@ describe('handleRequest — new workspace', () => {
     deps = makeDeps();
   });
 
-  it('review: fetches the PR ref, creates the worktree with the interpolated prompt, sets in-review', async () => {
+  it('review: fetches the PR ref, creates the worktree, starts the interpolated prompt, sets in-review', async () => {
     const res = await handleRequest(review, deps);
     expect(res).toEqual({ ok: true, worktreeName: created.displayName, worktreePath: created.path, reused: false });
     expect(deps.git.fetchPrRef).toHaveBeenCalledWith('/repo', 12);
     expect(deps.orca.createWorktree).toHaveBeenCalledWith({
       projectId: 'github:Acme/Web-App', base: 'origin/pr/12', name: 'PR #12 Fix login',
-      comment: 'github-orca:acme/web-app#12', agent: 'claude', prompt: `Review ${pr.url} (fix/login)`,
+      comment: 'github-orca:acme/web-app#12',
     });
+    expect(deps.orca.startAgent).toHaveBeenCalledWith(created.id, 'claude', `Review ${pr.url} (fix/login)`);
     expect(deps.orca.setStatus).toHaveBeenCalledWith(created.id, 'in-review');
   });
 
   it('checkout: no agent, no prompt, no status change', async () => {
     const res = await handleRequest({ ...review, action: 'checkout', template: undefined }, deps);
     expect(res.ok).toBe(true);
-    expect(deps.orca.createWorktree).toHaveBeenCalledWith(expect.objectContaining({ agent: undefined, prompt: undefined }));
+    expect(deps.orca.createWorktree.mock.calls[0][0]).not.toHaveProperty('agent');
+    expect(deps.orca.createWorktree.mock.calls[0][0]).not.toHaveProperty('prompt');
+    expect(deps.orca.startAgent).not.toHaveBeenCalled();
     expect(deps.orca.setStatus).not.toHaveBeenCalled();
   });
 
@@ -132,11 +135,33 @@ describe('handleRequest — new workspace', () => {
     expect(deps.git.renameBranch.mock.invocationCallOrder[0]).toBeLessThan(deps.git.setUpstream.mock.invocationCallOrder[0]);
   });
 
+  it.each(['review', 'continue', 'address-comments', 'custom'] as const)(
+    '%s: finishes branch configuration before starting the agent', async (action) => {
+      const order: string[] = [];
+      deps.git.renameBranch.mockImplementation(async () => { order.push('rename'); return true; });
+      deps.orca.linkPr.mockImplementation(async () => { order.push('link'); });
+      deps.git.setUpstream.mockImplementation(async () => { order.push('upstream'); });
+      deps.orca.setStatus.mockImplementation(async () => { order.push('status'); });
+      deps.orca.startAgent.mockImplementation(async () => { order.push('agent'); });
+
+      const res = await handleRequest({ ...review, action }, deps);
+
+      expect(res.ok).toBe(true);
+      expect(deps.orca.createWorktree.mock.calls[0][0]).not.toHaveProperty('agent');
+      expect(deps.orca.createWorktree.mock.calls[0][0]).not.toHaveProperty('prompt');
+      expect(deps.orca.startAgent).toHaveBeenCalledWith(created.id, 'claude', `Review ${pr.url} (fix/login)`);
+      expect(order).toEqual(action === 'continue' || action === 'address-comments'
+        ? ['rename', 'link', 'upstream', 'status', 'agent']
+        : ['rename', 'link', 'status', 'agent']);
+    },
+  );
+
   it('keeps Orca\'s branch name with a warning when the PR branch name is taken', async () => {
     deps.git.renameBranch.mockResolvedValue(false);
     const res = await handleRequest(review, deps);
     expect(res).toMatchObject({ ok: true, reused: false, warning: branchKeptWarning('x', 'fix/login') });
     expect(deps.orca.setStatus).toHaveBeenCalledWith(created.id, 'in-review');
+    expect(deps.orca.startAgent).toHaveBeenCalledWith(created.id, 'claude', `Review ${pr.url} (fix/login)`);
   });
 
   it('runs repo setup hooks for same-repo PRs', async () => {
@@ -169,7 +194,8 @@ describe('handleRequest — new workspace', () => {
   it('passes a hostile title through as data', async () => {
     deps = makeDeps({ pr: { title: 'a"b\n$(rm -rf ~) 🚀' } });
     await handleRequest({ ...review, template: '{pr_title}' }, deps);
-    expect(deps.orca.createWorktree).toHaveBeenCalledWith(expect.objectContaining({ name: 'PR #12 a"b $(rm -rf ~) 🚀', prompt: 'a"b\n$(rm -rf ~) 🚀' }));
+    expect(deps.orca.createWorktree).toHaveBeenCalledWith(expect.objectContaining({ name: 'PR #12 a"b $(rm -rf ~) 🚀' }));
+    expect(deps.orca.startAgent).toHaveBeenCalledWith(created.id, 'claude', 'a"b\n$(rm -rf ~) 🚀');
   });
 });
 
