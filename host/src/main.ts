@@ -6,6 +6,7 @@ import { GitCli } from './git';
 import { handleRequest, type Deps } from './handler';
 import { log } from './log';
 import { OrcaCli } from './orca';
+import { resolveOrcaLauncher } from './orca-launcher';
 import { encodeMessage, readMessage } from './protocol';
 import { parseRequest } from './validate';
 
@@ -25,7 +26,7 @@ async function main(): Promise<void> {
   try {
     const raw = await readMessage(process.stdin);
     response = await processMessage(raw, {
-      orca: new OrcaCli(nodeRunner),
+      orca: new OrcaCli(nodeRunner, undefined, undefined, () => resolveOrcaLauncher()),
       git: new GitCli(nodeRunner),
       gh: new GhCli(nodeRunner),
     });

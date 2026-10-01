@@ -1,0 +1,141 @@
+import { readFileSync, realpathSync } from 'node:fs';
+import path from 'node:path';
+import { HostError } from './errors';
+
+/** How to run Orca's CLI: `execFile(cmd, [...args, ...orcaArgs], { env })`. */
+export interface OrcaLauncher {
+  /** Executable to execFile. */
+  cmd: string;
+  /** Prepended before the orca arguments. */
+  args: string[];
+  env?: Record<string, string>;
+  /** Absolute path of Orca's runtime-client.js, when known. */
+  runtimeClient?: string;
+}
+
+export interface LauncherDeps {
+  platform: NodeJS.Platform;
+  pathEnv: string;
+  /** Unused: Orca's Windows launcher name already carries `.cmd`. */
+  pathExt?: string;
+  readFile: (file: string) => string;
+  /** Resolves symlinks; throws when the file does not exist. */
+  realpath: (file: string) => string;
+}
+
+const MAX_FORWARDS = 3;
+
+/** `orca` on Linux is usually the GNOME screen reader: Orca installs its CLI as `orca-ide` there. */
+export function orcaCommandName(platform: NodeJS.Platform): string {
+  if (platform === 'win32') return 'orca.cmd';
+  if (platform === 'linux') return 'orca-ide';
+  return 'orca';
+}
+
+/** Orca ships its CLI's runtime client next to the `orca` binary: <Resources>/bin/orca → <Resources>/app.asar.unpacked/… */
+export function runtimeClientPath(orcaBinary: string): string {
+  return path.posix.join(orcaBinary, '..', '..', 'app.asar.unpacked', 'out', 'cli', 'runtime-client.js');
+}
+
+const BASH_VAR = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*?)\s*$/;
+const CMD_VAR = /^\s*set\s+"([A-Za-z_][A-Za-z0-9_]*)=(.*)"\s*$/i;
+
+/**
+ * Reads the literal variable assignments of Orca's launcher scripts: bash `NAME='value'` / `export NAME='value'` /
+ * `NAME="value"` and cmd `set "NAME=value"`. Values referencing other variables (`$…`, `%…%`) are skipped.
+ */
+export function parseLauncherVars(text: string): Record<string, string> {
+  const vars: Record<string, string> = {};
+  for (const line of text.split(/\r?\n/)) {
+    const cmd = CMD_VAR.exec(line);
+    if (cmd) {
+      if (!/%[^%]*%/.test(cmd[2])) vars[cmd[1]] = cmd[2];
+      continue;
+    }
+    const bash = BASH_VAR.exec(line);
+    if (!bash) continue;
+    const raw = bash[2];
+    const single = /^'(.*)'$/.exec(raw);
+    if (single) {
+      const parts = single[1].split(`'"'"'`);
+      if (!parts.some((part) => part.includes("'"))) vars[bash[1]] = parts.join("'");
+      continue;
+    }
+    const double = /^"([^"\\$`]*)"$/.exec(raw);
+    if (double) vars[bash[1]] = double[1];
+  }
+  return vars;
+}
+
+function findOnPath(name: string, deps: LauncherDeps, paths: typeof path.posix): string {
+  for (const entry of deps.pathEnv.split(paths.delimiter)) {
+    const dir = entry.replace(/^"(.*)"$/, '$1');
+    if (!dir) continue;
+    const candidate = paths.join(dir, name);
+    try {
+      deps.realpath(candidate);
+      return candidate;
+    } catch {
+      // not in this directory
+    }
+  }
+  throw new HostError(
+    'orca_unavailable',
+    `Orca CLI not found on PATH (${name}): enable the shell command in Orca, then re-run the install script`,
+  );
+}
+
+/** Reads `orca.cmd`, following `ORCA_LAUNCHER` forwarders, and runs Electron directly: `.cmd` cannot carry prompts safely. */
+function windowsLauncher(found: string, deps: LauncherDeps): OrcaLauncher {
+  let file = found;
+  for (let hop = 0; hop <= MAX_FORWARDS; hop++) {
+    let vars: Record<string, string>;
+    try {
+      vars = parseLauncherVars(deps.readFile(file));
+    } catch {
+      break;
+    }
+    if (vars.ELECTRON && vars.CLI) {
+      const env: Record<string, string> = {
+        ELECTRON_RUN_AS_NODE: '1',
+        ORCA_APP_EXECUTABLE: vars.ELECTRON,
+        ORCA_APP_EXECUTABLE_NEEDS_APP_ROOT: '1',
+      };
+      if (vars.ORCA_USER_DATA_PATH) env.ORCA_USER_DATA_PATH = vars.ORCA_USER_DATA_PATH;
+      return {
+        cmd: vars.ELECTRON,
+        args: [vars.CLI],
+        env,
+        runtimeClient: path.win32.join(path.win32.dirname(vars.CLI), 'runtime-client.js'),
+      };
+    }
+    if (!vars.ORCA_LAUNCHER) break;
+    file = vars.ORCA_LAUNCHER;
+  }
+  throw new HostError('orca_unavailable', `Unrecognised Orca launcher: ${found}`);
+}
+
+/** Finds Orca's CLI launcher on PATH and works out how to run it on this platform. fs and env are injectable. */
+export function resolveOrcaLauncher(deps: Partial<LauncherDeps> = {}): OrcaLauncher {
+  const d: LauncherDeps = {
+    platform: deps.platform ?? process.platform,
+    pathEnv: deps.pathEnv ?? process.env.PATH ?? process.env.Path ?? '',
+    pathExt: deps.pathExt ?? process.env.PATHEXT,
+    readFile: deps.readFile ?? ((file) => readFileSync(file, 'utf8')),
+    realpath: deps.realpath ?? ((file) => realpathSync(file)),
+  };
+  const paths = d.platform === 'win32' ? path.win32 : path.posix;
+  const name = orcaCommandName(d.platform);
+  const found = findOnPath(name, d, paths);
+
+  if (d.platform === 'win32') return windowsLauncher(found, d);
+  if (d.platform === 'darwin') return { cmd: 'orca', args: [], runtimeClient: runtimeClientPath(d.realpath(found)) };
+
+  let cli: string | undefined;
+  try {
+    cli = parseLauncherVars(d.readFile(found)).CLI;
+  } catch {
+    // unreadable launcher: still runnable, without the runtime client
+  }
+  return { cmd: found, args: [], runtimeClient: cli ? path.posix.join(path.posix.dirname(cli), 'runtime-client.js') : undefined };
+}

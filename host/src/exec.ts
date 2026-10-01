@@ -36,6 +36,7 @@ export const nodeRunner: Runner = (cmd, args, opts = {}) =>
         timeout: opts.timeoutMs ?? 30_000,
         maxBuffer: 20 * 1024 * 1024,
         encoding: 'utf8',
+        windowsHide: true,
       },
       (err, stdout, stderr) => {
         if (err) {
