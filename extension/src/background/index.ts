@@ -1,4 +1,4 @@
-import type { HostResponse } from '../../../shared/types';
+import type { HostMessage, HostResponse } from '../../../shared/types';
 import { mergeSettings, SETTINGS_KEY } from '../settings';
 import {
   buildCloneRequest,
@@ -14,17 +14,27 @@ import {
 
 const inFlight = createInFlight<HostResponse>();
 
+// Read once: the platform cannot change while the worker runs. Failure means "unknown" (generic hints).
+const platformOs: Promise<string | undefined> = Promise.resolve()
+  .then(() => chrome.runtime.getPlatformInfo())
+  .then((info) => info.os)
+  .catch(() => undefined);
+
+async function connectAndSend(req: HostMessage): Promise<HostResponse> {
+  return sendViaPort(() => chrome.runtime.connectNative(HOST_NAME), req, undefined, await platformOs);
+}
+
 async function loadSettings() {
   return mergeSettings((await chrome.storage.sync.get(SETTINGS_KEY))[SETTINGS_KEY]);
 }
 
 async function runAction(msg: RunActionMessage): Promise<HostResponse> {
   const built = buildHostRequest(msg, await loadSettings());
-  return 'ok' in built ? built : sendViaPort(() => chrome.runtime.connectNative(HOST_NAME), built);
+  return 'ok' in built ? built : connectAndSend(built);
 }
 
 async function cloneRepo(msg: CloneRepoMessage): Promise<HostResponse> {
-  return sendViaPort(() => chrome.runtime.connectNative(HOST_NAME), buildCloneRequest(msg, await loadSettings()));
+  return connectAndSend(buildCloneRequest(msg, await loadSettings()));
 }
 
 chrome.runtime.onMessage.addListener((msg: RunActionMessage | CloneRepoMessage, _sender, sendResponse) => {
