@@ -21,7 +21,8 @@ Adds two buttons to GitHub:
 2. Get AMO API keys (addons.mozilla.org → Developer Hub → Manage API Keys), then
    `WEB_EXT_API_KEY=… WEB_EXT_API_SECRET=… npm run sign:firefox` → the signed `.xpi` lands in `web-ext-artifacts/`.
 3. Firefox → `about:addons` → gear → *Install Add-on From File…* → the `.xpi`.
-4. Re-signing needs a new `version` in `extension/manifest.json` (AMO rejects an already-signed version).
+4. Signing the same version again downloads its existing signed XPI (or waits for its pending approval).
+   Changed extension code needs a new `version`, managed by release-please; AMO versions are immutable.
 5. Development: `about:debugging#/runtime/this-firefox` → *Load Temporary Add-on…* →
    `extension-firefox/manifest.json` (gone on restart).
 
@@ -43,6 +44,8 @@ attaches:
 
 The native host is not part of a release: clone the repo and run `./scripts/install.sh` either way.
 Signing needs the `WEB_EXT_API_KEY` / `WEB_EXT_API_SECRET` repository secrets; if it fails, re-run the failed job.
+The release is created only after the build passes. Retries recover the XPI from AMO if that version was already
+submitted, including after an approval timeout or a failed download/upload.
 
 ## Pull request page
 

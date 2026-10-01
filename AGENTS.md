@@ -32,6 +32,8 @@ content script ──chrome.runtime.sendMessage──▶ service worker ──co
 - `scripts/install.sh`: builds and registers the host for Chrome, Arc and Firefox (pins absolute tool paths).
 - `scripts/firefox-manifest.mjs`: derives the Firefox manifest from `extension/manifest.json`; the Gecko ID is in
   `extension/firefox-id.txt`. `extension-firefox/` is the generated build output (git-ignored).
+- `scripts/sign-firefox.mjs`: reuses an existing AMO version (downloads it or waits for approval), and submits only
+  absent versions. The signed artifact is `web-ext-artifacts/github-orca-firefox-X.Y.Z.xpi`.
 - `.github/workflows/release.yml`: CI build on PRs and `main`; release-please (`release-please-config.json`,
   `.release-please-manifest.json`) opens the release PR, and once it is merged the workflow signs the Firefox build on
   AMO and attaches both extensions to the release (`scripts/release-version.mjs` checks tag = manifest `version`).
