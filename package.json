@@ -11,8 +11,8 @@
     "build": "node build.mjs",
     "typecheck": "tsc --noEmit",
     "gen-key": "node scripts/gen-key.mjs",
-    "lint:firefox": "web-ext lint --source-dir extension-firefox",
-    "sign:firefox": "web-ext sign --channel=unlisted --source-dir extension-firefox --artifacts-dir web-ext-artifacts"
+    "lint:firefox": "npm run build && web-ext lint --source-dir extension-firefox",
+    "sign:firefox": "npm run build && web-ext sign --channel=unlisted --source-dir extension-firefox --artifacts-dir web-ext-artifacts"
   },
   "keywords": [],
   "author": "",

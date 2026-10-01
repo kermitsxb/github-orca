@@ -44,11 +44,11 @@ npm run lint:firefox  # web-ext lint on extension-firefox/
 npm run sign:firefox  # AMO unlisted signing → web-ext-artifacts/ (needs WEB_EXT_API_KEY / WEB_EXT_API_SECRET)
 ```
 
-Run the first three before calling a change done. After a build, the installed host already runs the new
+Run `npm test`, `npm run typecheck`, `npm run build` and `npm run lint:firefox` before calling a change done. After a build, the installed host already runs the new
 `host/dist/host.cjs` (the wrapper points into this repo); the extension must be reloaded in
 `chrome://extensions`, then the GitHub tab refreshed. In Firefox, press *Reload* in `about:debugging`
-(temporary add-on) or install a re-signed `.xpi` (`npm run sign:firefox`, bump `version` first). Re-run `./scripts/install.sh` only when the wrapper or the
-host manifest must change.
+(temporary add-on) or install a re-signed `.xpi` (`npm run sign:firefox`, bump `version` first). Re-run
+`./scripts/install.sh` only when the wrapper or the host manifest must change.
 
 Host smoke test without the browser:
 

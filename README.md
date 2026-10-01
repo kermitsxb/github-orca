@@ -25,7 +25,7 @@ Adds two buttons to GitHub:
 5. Development: `about:debugging#/runtime/this-firefox` → *Load Temporary Add-on…* →
    `extension-firefox/manifest.json` (gone on restart).
 
-The Firefox extension ID is `extension/firefox-id.txt`. Options: `about:addons` → GitHub → Orca → *Preferences*.
+The Firefox extension ID is stored in `extension/firefox-id.txt`. Options: `about:addons` → GitHub → Orca → *Preferences*.
 Troubleshooting messages are the same as on Chrome.
 
 Requirements: Orca installed (it is started if needed), `gh auth login` done, and for PR actions the repo
@@ -74,6 +74,7 @@ Clone in Orca only clones and registers the repo: it creates no worktree and sta
 
 - “Host not installed” → run `./scripts/install.sh`, then reload the extension.
 - “Host refused” → the loaded extension ID differs from `extension/extension-id.txt`.
+- Button missing in Firefox → `about:addons` → GitHub → Orca → *Permissions* → “Access your data for github.com” must be allowed.
 - Host log: `~/Library/Logs/github-orca/host.log`.
 - “The native host stopped” → read the host log, or re-run `./scripts/install.sh`.
 - `git fetch` fails with a credentials error → the host is started by the browser and does not inherit
