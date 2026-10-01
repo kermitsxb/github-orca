@@ -105,8 +105,6 @@ async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostRespo
     base: await fetchBase(),
     name: worktreeName(pr.number, pr.title, onBranch),
     comment: marker,
-    agent: prompt ? req.agent : undefined,
-    prompt,
     // Fork PRs: never run the repo's setup hooks on code from an outside contributor.
     ...(pr.isCrossRepository ? { setup: 'skip' as const } : {}),
   });
@@ -115,6 +113,8 @@ async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostRespo
   await orca.linkPr(wt.id, pr.number, pushBranch);
   if (onBranch) await git.setUpstream(wt.path, pr.headRefName);
   if (status) await orca.setStatus(wt.id, status);
+  // The agent must see the final branch and upstream from its first command.
+  if (prompt) await orca.startAgent(wt.id, req.agent, prompt);
   const res: HostResponse = { ok: true, worktreeName: wt.displayName, worktreePath: wt.path, reused: false };
   return renamed ? res : { ...res, warning: branchKeptWarning(wt.branch.replace(/^refs\/heads\//, ''), pr.headRefName) };
 }
