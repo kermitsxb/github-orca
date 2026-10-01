@@ -32,6 +32,10 @@ content script ──chrome.runtime.sendMessage──▶ service worker ──co
 - `scripts/install.sh`: builds and registers the host for Chrome, Arc and Firefox (pins absolute tool paths).
 - `scripts/firefox-manifest.mjs`: derives the Firefox manifest from `extension/manifest.json`; the Gecko ID is in
   `extension/firefox-id.txt`. `extension-firefox/` is the generated build output (git-ignored).
+- `.github/workflows/release.yml`: CI build on PRs and `main`; release-please (`release-please-config.json`,
+  `.release-please-manifest.json`) opens the release PR, and once it is merged the workflow signs the Firefox build on
+  AMO and attaches both extensions to the release (`scripts/release-version.mjs` checks tag = manifest `version`).
+  Never edit versions by hand: release-please bumps `package.json` and `extension/manifest.json`.
 - `host/test/fixtures/`: real CLI outputs, anonymized; `NOTES.md` records how they were captured.
 
 ## Commands
