@@ -58,13 +58,13 @@ describe('validateSettings', () => {
 
 describe('validateSettings — cloneDir', () => {
   it('accepts an absolute or ~ folder', () => {
-    for (const cloneDir of ['~', '~/orca-projects', '/Users/me/src']) {
+    for (const cloneDir of ['~', '~/orca-projects', '/Users/me/src', 'C:\\Users\\me\\src', 'D:/src', '~\\src']) {
       expect(validateSettings({ ...DEFAULT_SETTINGS, cloneDir })).toBeNull();
     }
   });
 
   it('rejects a folder the host would refuse', () => {
-    for (const cloneDir of ['src', '~bob/src', './x']) {
+    for (const cloneDir of ['src', '~bob/src', './x', '\\src']) {
       expect(validateSettings({ ...DEFAULT_SETTINGS, cloneDir })).toMatch(/Invalid clone folder/);
     }
   });

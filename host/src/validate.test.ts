@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { HostError } from './errors';
 import { isValidGitRef, parseRequest } from './validate';
@@ -59,13 +60,13 @@ describe('parseRequest — clone', () => {
   const clone = { action: 'clone', owner: 'Acme', repo: 'Web-App', destination: '~/orca-projects' };
 
   it('expands ~ against the home directory and normalizes the path', () => {
-    expect(parseRequest(clone, '/Users/me')).toEqual({ ...clone, destination: '/Users/me/orca-projects' });
-    expect(parseRequest({ ...clone, destination: '~' }, '/Users/me')).toMatchObject({ destination: '/Users/me' });
-    expect(parseRequest({ ...clone, destination: '/src/./a/../b/' }, '/Users/me')).toMatchObject({ destination: '/src/b' });
+    expect(parseRequest(clone, '/Users/me', path.posix)).toEqual({ ...clone, destination: '/Users/me/orca-projects' });
+    expect(parseRequest({ ...clone, destination: '~' }, '/Users/me', path.posix)).toMatchObject({ destination: '/Users/me' });
+    expect(parseRequest({ ...clone, destination: '/src/./a/../b/' }, '/Users/me', path.posix)).toMatchObject({ destination: '/src/b' });
   });
 
   it('ignores PR-only fields', () => {
-    expect(parseRequest({ ...clone, prNumber: 3, agent: 'x', template: 't' }, '/h')).toEqual({ ...clone, destination: '/h/orca-projects' });
+    expect(parseRequest({ ...clone, prNumber: 3, agent: 'x', template: 't' }, '/h', path.posix)).toEqual({ ...clone, destination: '/h/orca-projects' });
   });
 
   it.each([
@@ -77,6 +78,27 @@ describe('parseRequest — clone', () => {
     ['destination too long', { ...clone, destination: `/${'x'.repeat(1_000)}` }],
     ['invalid repo', { ...clone, repo: '..' }],
   ])('rejects %s', (_label, raw) => {
-    expect(codeOf(() => parseRequest(raw, '/h'))).toBe('invalid_request');
+    expect(codeOf(() => parseRequest(raw, '/h', path.posix))).toBe('invalid_request');
+  });
+});
+
+describe('parseRequest — clone on Windows', () => {
+  const clone = { action: 'clone', owner: 'Acme', repo: 'Web-App', destination: '~/src' };
+  const home = 'C:\\Users\\me';
+  const dest = (destination: unknown) => parseRequest({ ...clone, destination }, home, path.win32);
+
+  it('accepts drive-letter paths and normalizes separators', () => {
+    expect(dest('C:\\Users\\me\\src')).toMatchObject({ destination: 'C:\\Users\\me\\src' });
+    expect(dest('C:/Users/me/src')).toMatchObject({ destination: 'C:\\Users\\me\\src' });
+  });
+
+  it('expands ~ with either separator', () => {
+    expect(dest('~\\src')).toMatchObject({ destination: 'C:\\Users\\me\\src' });
+    expect(dest('~/src')).toMatchObject({ destination: 'C:\\Users\\me\\src' });
+    expect(dest('~')).toMatchObject({ destination: 'C:\\Users\\me' });
+  });
+
+  it.each(['src', '\\src', '/src', '\\\\server\\share', '~bob\\x'])('rejects %s', (d) => {
+    expect(codeOf(() => dest(d))).toBe('invalid_request');
   });
 });
