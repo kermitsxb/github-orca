@@ -67,8 +67,9 @@ the console (OEM) code page: the installer stops and lists the offending paths o
 
 1. Launch Firefox once (it creates the Mozilla native messaging folder), then run the installer for your OS.
 2. Get AMO API keys (addons.mozilla.org → Developer Hub → Manage API Keys), then
-   `WEB_EXT_API_KEY=… WEB_EXT_API_SECRET=… npm run sign:firefox` → the signed `.xpi` lands in `web-ext-artifacts/`
-   (or take the `.xpi` attached to a [release](#releases)).
+   `WEB_EXT_API_KEY=… WEB_EXT_API_SECRET=… npm run sign:firefox` (PowerShell:
+   `$env:WEB_EXT_API_KEY='…'; $env:WEB_EXT_API_SECRET='…'; npm run sign:firefox`) → the signed `.xpi` lands in
+   `web-ext-artifacts/` (or take the `.xpi` attached to a [release](#releases)).
 3. Firefox → `about:addons` → gear → *Install Add-on From File…* → the `.xpi`.
 4. Signing the same version again downloads its existing signed XPI (or waits for its pending approval).
    Changed extension code needs a new `version`, managed by release-please; AMO versions are immutable.
@@ -181,6 +182,7 @@ Clone in Orca only clones and registers the repo: it creates no worktree and sta
 - [ ] Merged PR → Review shows “PR merged: only Checkout only is available”.
 - [ ] Repo not in Orca → “is not in Orca”.
 - [ ] Orca quit → it starts, then the workspace opens.
+- [ ] Orca not running → Review on Linux/Windows → Orca starts and the agent runs.
 - [ ] Repo page (home, `tree/`, `blob/`) → one `Clone in Orca` button before Watch/Fork/Star; none on issues, actions, settings.
 - [ ] Clone in Orca on a repo not in Orca → cloned into `~/orca-projects/<repo>` (folder created), project visible in Orca.
 - [ ] Clone in Orca again → “is already in Orca”, nothing cloned.

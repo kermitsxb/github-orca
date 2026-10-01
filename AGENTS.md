@@ -45,7 +45,8 @@ content script ──chrome.runtime.sendMessage──▶ service worker ──co
 - `.github/workflows/release.yml`: CI on PRs and `main` on Ubuntu, macOS and Windows (tests, typecheck, build,
   host and install smoke tests against stub Orca launchers; Firefox lint and packaging on Ubuntu only).
   release-please (`release-please-config.json`, `.release-please-manifest.json`) opens the release PR, and once it
-  is merged the workflow signs the Firefox build on AMO and attaches both extensions to the release (`scripts/release-version.mjs` checks tag = manifest `version`).
+  is merged the workflow signs the Firefox build on AMO and attaches both extensions to the release
+  (`scripts/release-version.mjs` checks tag = manifest `version`).
   Never edit versions by hand: release-please bumps `package.json` and `extension/manifest.json`.
 - `host/test/fixtures/`: real CLI outputs, anonymized; `NOTES.md` records how they were captured.
 
@@ -59,17 +60,20 @@ npm run lint:firefox  # web-ext lint on extension-firefox/
 npm run sign:firefox  # AMO unlisted signing → web-ext-artifacts/ (needs WEB_EXT_API_KEY / WEB_EXT_API_SECRET)
 ```
 
-Run `npm test`, `npm run typecheck`, `npm run build` and `npm run lint:firefox` before calling a change done. After a build, the installed host already runs the new
-`host/dist/host.cjs` (the wrapper points into this repo); the extension must be reloaded in
-`chrome://extensions`, then the GitHub tab refreshed. In Firefox, press *Reload* in `about:debugging`
-(temporary add-on) or install a re-signed `.xpi` (`npm run sign:firefox`, bump `version` first). Re-run
-the installer only when the wrapper or the host manifest must change.
+Run `npm test`, `npm run typecheck`, `npm run build` and `npm run lint:firefox` before calling a change done.
+After a build, the installed host already runs the new `host/dist/host.cjs` (the wrapper points into this repo);
+the extension must be reloaded in `chrome://extensions`, then the GitHub tab refreshed. In Firefox, press *Reload*
+in `about:debugging` (temporary add-on) or install a re-signed `.xpi` (`npm run sign:firefox`, bump `version`
+first). Re-run the installer only when the wrapper or the host manifest must change.
 
 Host smoke test without the browser (an invalid frame, safe anywhere):
 
 ```bash
 GITHUB_ORCA_HOST_MAIN=1 node scripts/host-smoke.mjs node host/dist/host.cjs   # built host
 node scripts/host-smoke.mjs host/dist/github-orca-host                        # installed wrapper (macOS, Linux)
+```
+
+```powershell
 node scripts/host-smoke.mjs host\dist\github-orca-host.bat                    # installed wrapper (Windows)
 ```
 
@@ -98,8 +102,9 @@ CI runs them against stub Orca launchers.
   *and* in `host/src/validate.ts` with the same rule.
 - Orca `--json` output is `{ ok, result }` / `{ ok: false, error: { message } }`: parse through
   `parseOrcaJson`/`toHostError`, and read fields defensively (`??`). When relying on a new Orca command, check its
-  shape (`orca <cmd> --help`, a captured fixture, or Orca's CLI sources in
-  `/Applications/Orca.app/Contents/Resources/app.asar.unpacked/out/cli/`).
+  shape (`orca <cmd> --help`, a captured fixture, or Orca's CLI sources: on macOS in
+  `/Applications/Orca.app/Contents/Resources/app.asar.unpacked/out/cli/`, on Linux and Windows in
+  `<install dir>/resources/app.asar.unpacked/out/cli/`).
 - Orca project ids are lower-cased `github:<owner>/<repo>`.
 - Orca's CLI launcher per OS: `orca` (macOS), `orca-ide` (Linux), `orca.cmd` (Windows). Never run `orca` on Linux
   (usually the GNOME screen reader). Never route PR titles or prompts through `cmd.exe` or a shell.
