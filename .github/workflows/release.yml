@@ -1,12 +1,13 @@
-# Builds both extensions on every PR / push to main; on a vX.Y.Z tag, signs the Firefox one on AMO (unlisted)
-# and publishes both in a GitHub Release. The native host is not released: it is installed from a clone.
+# Builds both extensions on every PR / push to main. On main, release-please keeps a release PR up to date; merging
+# it tags vX.Y.Z and creates the GitHub Release, then the Firefox extension is signed on AMO (unlisted) and both
+# extensions are attached to it. Everything runs in this workflow: tags created with GITHUB_TOKEN trigger no other.
+# The native host is not released: it is installed from a clone.
 name: Build and release
 
 on:
   pull_request:
   push:
     branches: [main]
-    tags: ['v*']
 
 permissions:
   contents: read
@@ -33,14 +34,34 @@ jobs:
             github-orca-chrome.zip
             extension-firefox/
 
-  release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+  release-please:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  assets:
+    if: needs.release-please.outputs.release_created == 'true'
+    needs: [build, release-please]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ needs.release-please.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -49,23 +70,18 @@ jobs:
       - name: Check the tag against the manifest version
         id: version
         run: |
-          version="$(node scripts/release-version.mjs "$GITHUB_REF")"
+          version="$(node scripts/release-version.mjs "$TAG")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Sign Firefox (AMO, unlisted)
         run: npm run sign:firefox # builds first
         env:
           WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
           WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
-      - name: Package release assets
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          (cd extension && zip -r "../github-orca-chrome-$VERSION.zip" manifest.json options.html dist)
-          mv web-ext-artifacts/*.xpi "github-orca-firefox-$VERSION.xpi"
-      - name: Create the GitHub Release
+      - name: Attach both extensions to the release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          gh release create "$GITHUB_REF_NAME" --generate-notes \
-            "github-orca-chrome-$VERSION.zip" "github-orca-firefox-$VERSION.xpi"
+          (cd extension && zip -r "../github-orca-chrome-$VERSION.zip" manifest.json options.html dist)
+          mv web-ext-artifacts/*.xpi "github-orca-firefox-$VERSION.xpi"
+          gh release upload "$TAG" --clobber "github-orca-chrome-$VERSION.zip" "github-orca-firefox-$VERSION.xpi"
