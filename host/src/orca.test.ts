@@ -193,9 +193,9 @@ describe('OrcaCli launcher', () => {
       throw missing;
     });
     const orca = new OrcaCli(run, undefined, undefined, resolve);
-    expect(await orca.isReachable()).toBe(false);
+    await expect(orca.isReachable()).rejects.toBe(missing);
     await expect(orca.findProject('o', 'r')).rejects.toBe(missing);
-    await expect(orca.open()).resolves.toBeUndefined();
+    await expect(orca.open()).rejects.toBe(missing);
     expect(resolve).toHaveBeenCalledTimes(1);
     expect(run.calls).toEqual([]);
   });

@@ -84,7 +84,9 @@ export class OrcaCli implements OrcaApi {
     }
   }
 
+  /** A launcher that cannot be resolved rejects with its HostError: "not responding" would hide the real cause. */
   async isReachable(): Promise<boolean> {
+    this.getLauncher();
     try {
       const result = await this.call(['status']);
       return result.runtime?.reachable === true;
@@ -94,8 +96,8 @@ export class OrcaCli implements OrcaApi {
   }
 
   async open(): Promise<void> {
+    const l = this.getLauncher();
     try {
-      const l = this.getLauncher();
       await this.run(l.cmd, [...l.args, 'open'], { timeoutMs: 60_000, env: l.env });
     } catch {
       // isReachable() decides afterwards whether Orca came up

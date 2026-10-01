@@ -277,6 +277,17 @@ describe('handleRequest — errors', () => {
     expect(deps.orca.createWorktree).not.toHaveBeenCalled();
   });
 
+  it('returns a launcher resolution error as is, not as "Orca is not responding"', async () => {
+    const deps = makeDeps();
+    const message = 'Orca CLI not found on PATH (orca-ide): enable the shell command in Orca, then re-run the install script';
+    deps.orca.isReachable.mockRejectedValue(new HostError('orca_unavailable', message));
+    expect(await handleRequest(review, deps)).toEqual({ ok: false, code: 'orca_unavailable', message });
+    expect(await handleRequest({ action: 'clone', owner: 'o', repo: 'r', destination: '/Users/me/orca-projects' }, deps)).toEqual({
+      ok: false, code: 'orca_unavailable', message,
+    });
+    expect(deps.orca.open).not.toHaveBeenCalled();
+  });
+
   it('pr_not_open for an agent action on a merged PR, but checkout still works', async () => {
     const deps = makeDeps({ pr: { state: 'MERGED' } });
     expect(await handleRequest(review, deps)).toMatchObject({ ok: false, code: 'pr_not_open' });
