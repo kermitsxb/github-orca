@@ -29,6 +29,7 @@ function makeDeps(overrides: { pr?: Partial<PrMeta>; worktrees?: WorktreeInfo[] 
       setStatus: vi.fn().mockResolvedValue(undefined),
       startAgent: vi.fn().mockResolvedValue(undefined),
       reveal: vi.fn().mockResolvedValue(undefined),
+      linkPr: vi.fn().mockResolvedValue(undefined),
       setupClone: vi.fn().mockResolvedValue({ path: '/Users/me/orca-projects/Web-App' }),
     },
   };
@@ -129,6 +130,20 @@ describe('handleRequest — new workspace', () => {
     for (const [opts] of deps.orca.createWorktree.mock.calls) expect(opts).toMatchObject({ setup: 'skip' });
   });
 
+  it('links the PR to the new workspace, pushing to the PR branch (Orca\'s PR panel)', async () => {
+    for (const action of ['review', 'checkout', 'continue'] as const) {
+      const deps = makeDeps();
+      await handleRequest({ ...review, action }, deps);
+      expect(deps.orca.linkPr).toHaveBeenCalledWith(created.id, 12, 'fix/login');
+    }
+  });
+
+  it('fork PR: links the PR without a push target', async () => {
+    const deps = makeDeps({ pr: { isCrossRepository: true } });
+    await handleRequest(review, deps);
+    expect(deps.orca.linkPr).toHaveBeenCalledWith(created.id, 12, undefined);
+  });
+
   it('passes a hostile title through as data', async () => {
     deps = makeDeps({ pr: { title: 'a"b\n$(rm -rf ~) 🚀' } });
     await handleRequest({ ...review, template: '{pr_title}' }, deps);
@@ -144,6 +159,12 @@ describe('handleRequest — reuse', () => {
     expect(deps.orca.startAgent).toHaveBeenCalledWith('repo::/wt/old', 'claude', `Review ${pr.url} (fix/login)`);
     expect(deps.orca.setStatus).toHaveBeenCalledWith('repo::/wt/old', 'in-review');
     expect(deps.orca.createWorktree).not.toHaveBeenCalled();
+  });
+
+  it('links the PR to the existing workspace (backfills older workspaces)', async () => {
+    const deps = makeDeps({ worktrees: [existing('github-orca:acme/web-app#12')] });
+    await handleRequest(review, deps);
+    expect(deps.orca.linkPr).toHaveBeenCalledWith('repo::/wt/old', 12, 'fix/login');
   });
 
   it('refreshes the PR ref and fast-forwards the existing workspace before starting the agent', async () => {

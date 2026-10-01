@@ -41,6 +41,11 @@ export interface OrcaApi {
   setStatus(worktreeId: string, status: string): Promise<void>;
   startAgent(worktreeId: string, agent: string, prompt: string): Promise<void>;
   reveal(worktreeId: string): Promise<void>;
+  /**
+   * Links the GitHub PR to the worktree (Orca's PR panel); with `pushBranch`, Orca's push/pull target
+   * origin/<pushBranch>, which keeps the link once the worktree moves past the PR head. Best effort: never throws.
+   */
+  linkPr(worktreeId: string, prNumber: number, pushBranch?: string): Promise<void>;
   /** Clones the repo on this machine and registers it in Orca; returns the clone path. */
   setupClone(opts: CloneOptions): Promise<{ path: string }>;
 }

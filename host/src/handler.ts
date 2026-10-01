@@ -81,11 +81,14 @@ async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostRespo
   const fetchBase = () =>
     onBranch ? git.fetchBranch(project.repoPath, pr.headRefName) : git.fetchPrRef(project.repoPath, pr.number);
 
+  // Fork PRs: the head branch is not on origin, so the PR is only linked.
+  const pushBranch = pr.isCrossRepository ? undefined : pr.headRefName;
   const marker = workspaceMarker(req);
   const existing = (await orca.listWorktrees()).find((w) => !w.isArchived && hasMarker(w.comment, marker));
   if (existing) {
     // Bring the workspace up to the current PR head before the agent looks at it.
     const upToDate = await git.fastForward(existing.path, await fetchBase());
+    await orca.linkPr(existing.id, pr.number, pushBranch);
     if (prompt) await orca.startAgent(existing.id, req.agent, prompt);
     else await orca.reveal(existing.id);
     if (status) await orca.setStatus(existing.id, status);
@@ -103,6 +106,7 @@ async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostRespo
     // Fork PRs: never run the repo's setup hooks on code from an outside contributor.
     ...(pr.isCrossRepository ? { setup: 'skip' as const } : {}),
   });
+  await orca.linkPr(wt.id, pr.number, pushBranch);
   if (onBranch) await git.setUpstream(wt.path, pr.headRefName);
   if (status) await orca.setStatus(wt.id, status);
   return { ok: true, worktreeName: wt.displayName, worktreePath: wt.path, reused: false };

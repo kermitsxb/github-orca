@@ -1,6 +1,10 @@
+import { realpathSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { delimiter, join, resolve } from 'node:path';
 import { HostError, toHostError } from './errors';
 import type { Runner } from './exec';
+import { log } from './log';
 import type { CloneOptions, CreateWorktreeOptions, OrcaApi, ProjectRef, WorktreeInfo } from './ports';
 
 type Json = Record<string, any>;
@@ -35,10 +39,38 @@ function toWorktreeInfo(w: Json): WorktreeInfo {
   };
 }
 
+/** A call on Orca's runtime RPC, for metadata the `orca` CLI has no flag for. */
+export type OrcaRpc = (method: string, params: Json) => Promise<unknown>;
+
+/** Orca ships its CLI's runtime client next to the `orca` binary: <Resources>/bin/orca → <Resources>/app.asar.unpacked/… */
+export function runtimeClientPath(orcaBinary: string): string {
+  return resolve(orcaBinary, '..', '..', 'app.asar.unpacked', 'out', 'cli', 'runtime-client.js');
+}
+
+function findOnPath(cmd: string): string {
+  for (const dir of (process.env.PATH ?? '').split(delimiter)) {
+    try {
+      return realpathSync(join(dir, cmd));
+    } catch {
+      // not in this directory
+    }
+  }
+  throw new Error(`${cmd} not found on PATH`);
+}
+
+/** Loads Orca's own runtime client (same socket and auth as the CLI). Internal API: callers must tolerate failure. */
+export async function loadOrcaRpc(): Promise<OrcaRpc> {
+  const path = runtimeClientPath(findOnPath('orca'));
+  const { RuntimeClient } = createRequire(path)(path);
+  const client = new RuntimeClient();
+  return (method, params) => client.call(method, params);
+}
+
 export class OrcaCli implements OrcaApi {
   constructor(
     private readonly run: Runner,
     private readonly makeDir: (path: string) => Promise<unknown> = (path) => mkdir(path, { recursive: true }),
+    private readonly loadRpc: () => Promise<OrcaRpc> = loadOrcaRpc,
   ) {}
 
   private async call(args: string[], timeoutMs = 30_000): Promise<Json> {
@@ -107,6 +139,20 @@ export class OrcaCli implements OrcaApi {
 
   async reveal(worktreeId: string): Promise<void> {
     await this.call(['terminal', 'create', '--worktree', `id:${worktreeId}`, '--focus']);
+  }
+
+  async linkPr(worktreeId: string, prNumber: number, pushBranch?: string): Promise<void> {
+    try {
+      const rpc = await this.loadRpc();
+      await rpc('worktree.set', {
+        worktree: `id:${worktreeId}`,
+        linkedPR: prNumber,
+        // Why: Orca unlinks an open PR once the worktree's HEAD leaves the PR head, unless the push target is the PR branch.
+        ...(pushBranch ? { pushTarget: { remoteName: 'origin', branchName: pushBranch } } : {}),
+      });
+    } catch (e) {
+      log('link_pr_failed', { worktreeId, prNumber, error: e instanceof Error ? e.message : String(e) });
+    }
   }
 
   async setupClone(o: CloneOptions): Promise<{ path: string }> {
