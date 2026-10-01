@@ -56,6 +56,8 @@ export interface GitApi {
   /** Fetches origin/<branch>; returns the base ref `origin/<branch>`. */
   fetchBranch(repoPath: string, branch: string): Promise<string>;
   setUpstream(worktreePath: string, branch: string): Promise<void>;
+  /** `branch -m <name>` in the worktree: true when done, false when git refuses (name already taken). */
+  renameBranch(worktreePath: string, name: string): Promise<boolean>;
   /** `merge --ff-only <ref>` in the worktree: true when done or already up to date, false when git refuses. */
   fastForward(worktreePath: string, ref: string): Promise<boolean>;
 }

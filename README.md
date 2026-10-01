@@ -62,6 +62,11 @@ Continue work / Address comments, whose workspace is named `PR #<n> (branch) <ti
 On reuse the workspace is fetched and fast-forwarded to the current PR head first; if that is refused
 (local changes, diverged history) the agent still starts and the button shows a ⚠️ warning.
 
+A new PR workspace's local branch is named after the PR's branch (`<head_ref>`). Git allows a branch in one
+worktree only, so when that name is taken (checked out in your clone or in the PR's other workspace, a fork
+branch named like a local one, a leftover branch) the workspace keeps Orca's branch name and the button shows a
+⚠️ warning.
+
 ## Repository page
 
 `Clone in Orca` sits before Watch / Fork / Star on the repo home and its `tree/…` / `blob/…` views (not on
@@ -108,6 +113,8 @@ Clone in Orca only clones and registers the repo: it creates no worktree and sta
 - [ ] Review on an open PR → Orca shows the new workspace, agent receives the prompt, board status In review.
 - [ ] Review again → “(reused)”, a new agent tab in the same workspace.
 - [ ] Checkout only → workspace without agent; HEAD equals the PR head SHA.
+- [ ] Review on a PR whose branch is not checked out locally → the workspace's branch is `<head_ref>`.
+- [ ] Review on a PR whose branch is checked out in your clone → ⚠️ “Local branch kept as …”, the agent still starts.
 - [ ] Continue work → upstream is `origin/<head_ref>`.
 - [ ] Custom prompt → the agent receives the typed text.
 - [ ] Multi-line Custom prompt on a reused workspace → sent as one prompt.

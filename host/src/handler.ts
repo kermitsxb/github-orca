@@ -22,6 +22,10 @@ const MAX_NAME = 80;
 export const STALE_WARNING =
   "Workspace not updated (local changes or diverged history): the agent works on an older version of the PR";
 
+export function branchKeptWarning(current: string, wanted: string): string {
+  return `Local branch kept as ${current}: ${wanted} already exists`;
+}
+
 /** Actions that work on the PR's real branch (fetch origin/<headRef>, upstream set, can push). */
 export function isBranchAction(action: Action): boolean {
   return action === 'continue' || action === 'address-comments';
@@ -106,10 +110,13 @@ async function run(req: HostRequest, { orca, git, gh }: Deps): Promise<HostRespo
     // Fork PRs: never run the repo's setup hooks on code from an outside contributor.
     ...(pr.isCrossRepository ? { setup: 'skip' as const } : {}),
   });
+  // Orca names the branch after the workspace; give it the PR's branch name (taken when checked out elsewhere).
+  const renamed = await git.renameBranch(wt.path, pr.headRefName);
   await orca.linkPr(wt.id, pr.number, pushBranch);
   if (onBranch) await git.setUpstream(wt.path, pr.headRefName);
   if (status) await orca.setStatus(wt.id, status);
-  return { ok: true, worktreeName: wt.displayName, worktreePath: wt.path, reused: false };
+  const res: HostResponse = { ok: true, worktreeName: wt.displayName, worktreePath: wt.path, reused: false };
+  return renamed ? res : { ...res, warning: branchKeptWarning(wt.branch.replace(/^refs\/heads\//, ''), pr.headRefName) };
 }
 
 export async function handleRequest(req: HostMessage, deps: Deps): Promise<HostResponse> {
