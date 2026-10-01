@@ -14,6 +14,20 @@ Adds two buttons to GitHub:
 4. Browser → `chrome://extensions` (Arc: `arc://extensions`) → Developer mode → *Load unpacked* → `extension/`.
    The displayed ID must match `extension/extension-id.txt`.
 
+## Install (macOS, Firefox 128+)
+
+1. `npm install`, then launch Firefox once (it creates the Mozilla native messaging directory) and run
+   `./scripts/install.sh` (it registers the host for Chrome, Arc and Firefox, whichever are present).
+2. Get AMO API keys (addons.mozilla.org → Developer Hub → Manage API Keys), then
+   `WEB_EXT_API_KEY=… WEB_EXT_API_SECRET=… npm run sign:firefox` → the signed `.xpi` lands in `web-ext-artifacts/`.
+3. Firefox → `about:addons` → gear → *Install Add-on From File…* → the `.xpi`.
+4. Re-signing needs a new `version` in `extension/manifest.json` (AMO rejects an already-signed version).
+5. Development: `about:debugging#/runtime/this-firefox` → *Load Temporary Add-on…* →
+   `extension-firefox/manifest.json` (gone on restart).
+
+The Firefox extension ID is `extension/firefox-id.txt`. Options: `about:addons` → GitHub → Orca → *Preferences*.
+Troubleshooting messages are the same as on Chrome.
+
 Requirements: Orca installed (it is started if needed), `gh auth login` done, and for PR actions the repo
 registered in Orca — either with `Clone in Orca` on its page, or `orca repo add --path <existing clone>`.
 
@@ -41,7 +55,7 @@ If the repo is already in Orca, nothing is cloned and the toast shows its path (
 
 ## Options
 
-Extension options (`chrome://extensions` → GitHub → Orca → *Details* → *Extension options*):
+Extension options (`chrome://extensions` → GitHub → Orca → *Details* → *Extension options*; Firefox: see above):
 
 - **Agent**: the `--agent` command passed to Orca (`claude` by default).
 - **Clone folder**: parent folder for `Clone in Orca`, absolute or `~/…` (default `~/orca-projects`,
