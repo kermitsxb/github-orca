@@ -31,6 +31,18 @@ Troubleshooting messages are the same as on Chrome.
 Requirements: Orca installed (it is started if needed), `gh auth login` done, and for PR actions the repo
 registered in Orca — either with `Clone in Orca` on its page, or `orca repo add --path <existing clone>`.
 
+## Releases
+
+Each `vX.Y.Z` tag builds a GitHub Release (`.github/workflows/release.yml`) with:
+
+- `github-orca-chrome-X.Y.Z.zip`: unzip, then *Load unpacked* in Chrome/Arc (same extension ID as a local build);
+- `github-orca-firefox-X.Y.Z.xpi`: signed by AMO (unlisted), install it from `about:addons`.
+
+The native host is not part of a release: clone the repo and run `./scripts/install.sh` either way.
+
+To release: bump `version` in `extension/manifest.json`, commit, then `git tag vX.Y.Z && git push origin vX.Y.Z`.
+The tag must match that version. Signing needs the `WEB_EXT_API_KEY` / `WEB_EXT_API_SECRET` repository secrets.
+
 ## Pull request page
 
 | Action | Effect |
