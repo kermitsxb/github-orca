@@ -53,6 +53,13 @@ describe('createOrcaButton', () => {
     expect(toast()!.dataset.state).toBe('warning');
   });
 
+  it('shows a warning on a new workspace without marking it reused', async () => {
+    const { q } = mount(vi.fn<Send>().mockResolvedValue({ ...ok, warning: 'Local branch kept as x' }));
+    q<HTMLButtonElement>('.gho-main').click();
+    await vi.waitFor(() => expect(toastText()).toBe('⚠️ PR #3 Fix — Local branch kept as x'));
+    expect(toast()!.dataset.state).toBe('warning');
+  });
+
   it('explains a reloaded extension when the send rejects', async () => {
     const { q } = mount(vi.fn<Send>().mockRejectedValue(new Error('Extension context invalidated.')));
     q<HTMLButtonElement>('.gho-main').click();

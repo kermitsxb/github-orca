@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HostRequest, PrMeta } from '../../shared/types';
 import { HostError } from './errors';
-import { handleRequest, hasMarker, workspaceMarker, worktreeName, type Deps } from './handler';
+import { branchKeptWarning, handleRequest, hasMarker, workspaceMarker, worktreeName, type Deps } from './handler';
 import type { WorktreeInfo } from './ports';
 
 const pr: PrMeta = {
@@ -18,6 +18,7 @@ function makeDeps(overrides: { pr?: Partial<PrMeta>; worktrees?: WorktreeInfo[] 
       fetchPrRef: vi.fn().mockResolvedValue('origin/pr/12'),
       fetchBranch: vi.fn().mockResolvedValue('origin/fix/login'),
       setUpstream: vi.fn().mockResolvedValue(undefined),
+      renameBranch: vi.fn().mockResolvedValue(true),
       fastForward: vi.fn().mockResolvedValue(true),
     },
     orca: {
@@ -115,6 +116,27 @@ describe('handleRequest — new workspace', () => {
     }));
     expect(deps.git.setUpstream).toHaveBeenCalledWith(created.path, 'fix/login');
     expect(deps.orca.setStatus).toHaveBeenCalledWith(created.id, 'in-progress');
+  });
+
+  it('names the local branch after the PR head branch, for every action', async () => {
+    for (const action of ['review', 'checkout', 'continue', 'address-comments'] as const) {
+      const deps = makeDeps();
+      const res = await handleRequest({ ...review, action }, deps);
+      expect(deps.git.renameBranch).toHaveBeenCalledWith(created.path, 'fix/login');
+      expect(res).not.toHaveProperty('warning');
+    }
+  });
+
+  it('renames the branch before setting its upstream', async () => {
+    await handleRequest({ ...review, action: 'continue' }, deps);
+    expect(deps.git.renameBranch.mock.invocationCallOrder[0]).toBeLessThan(deps.git.setUpstream.mock.invocationCallOrder[0]);
+  });
+
+  it('keeps Orca\'s branch name with a warning when the PR branch name is taken', async () => {
+    deps.git.renameBranch.mockResolvedValue(false);
+    const res = await handleRequest(review, deps);
+    expect(res).toMatchObject({ ok: true, reused: false, warning: branchKeptWarning('x', 'fix/login') });
+    expect(deps.orca.setStatus).toHaveBeenCalledWith(created.id, 'in-review');
   });
 
   it('runs repo setup hooks for same-repo PRs', async () => {

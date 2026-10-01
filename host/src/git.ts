@@ -30,12 +30,20 @@ export class GitCli implements GitApi {
     await this.git(['-C', worktreePath, 'branch', `--set-upstream-to=origin/${branch}`]);
   }
 
+  async renameBranch(worktreePath: string, name: string): Promise<boolean> {
+    return this.tolerateRefusal(['-C', worktreePath, 'branch', '-m', name]);
+  }
+
   async fastForward(worktreePath: string, ref: string): Promise<boolean> {
+    return this.tolerateRefusal(['-C', worktreePath, 'merge', '--ff-only', ref]);
+  }
+
+  /** true when git succeeds, false when it refuses: not fatal, the caller warns instead. Timeouts still throw. */
+  private async tolerateRefusal(args: string[]): Promise<boolean> {
     try {
-      await this.run('git', ['-C', worktreePath, 'merge', '--ff-only', ref], { timeoutMs: 60_000, env: GIT_ENV });
+      await this.run('git', args, { timeoutMs: 60_000, env: GIT_ENV });
       return true;
     } catch (e) {
-      // A refused merge (dirty tree, diverged history) is not fatal: the caller warns instead.
       if (e instanceof CommandError && !e.timedOut) return false;
       throw toHostError(e, 'git_failed');
     }

@@ -26,6 +26,22 @@ describe('GitCli', () => {
     expect(run.calls[0].args).toEqual(['-C', '/wt', 'branch', '--set-upstream-to=origin/feat/x']);
   });
 
+  it('renames the worktree branch', async () => {
+    const run = fakeRunner([['git', '']]);
+    expect(await new GitCli(run).renameBranch('/wt', 'feat/x')).toBe(true);
+    expect(run.calls[0].args).toEqual(['-C', '/wt', 'branch', '-m', 'feat/x']);
+  });
+
+  it('returns false when git refuses the rename (name taken)', async () => {
+    const run = fakeRunner([['git', new CommandError('git', '', "fatal: a branch named 'feat/x' already exists", false)]]);
+    expect(await new GitCli(run).renameBranch('/wt', 'feat/x')).toBe(false);
+  });
+
+  it('still throws timeout when the rename is killed', async () => {
+    const run = fakeRunner([['git', new CommandError('git', '', '', true)]]);
+    await expect(new GitCli(run).renameBranch('/wt', 'feat/x')).rejects.toMatchObject({ code: 'timeout' });
+  });
+
   it('maps failures to git_failed with stderr', async () => {
     const run = fakeRunner([['git', new CommandError('git', '', "fatal: couldn't find remote ref pull/12/head", false)]]);
     await expect(new GitCli(run).fetchPrRef('/repo', 12)).rejects.toMatchObject({ code: 'git_failed', message: expect.stringContaining('pull/12/head') });
