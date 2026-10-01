@@ -16,8 +16,8 @@ export interface OrcaLauncher {
 export interface LauncherDeps {
   platform: NodeJS.Platform;
   pathEnv: string;
-  /** Unused: Orca's Windows launcher name already carries `.cmd`. */
-  pathExt?: string;
+  /** The host's environment: orca.cmd's env handling depends on it. */
+  env: NodeJS.ProcessEnv;
   readFile: (file: string) => string;
   /** Resolves symlinks; throws when the file does not exist. */
   realpath: (file: string) => string;
@@ -67,14 +67,14 @@ export function parseLauncherVars(text: string): Record<string, string> {
   return vars;
 }
 
-function findOnPath(name: string, deps: LauncherDeps, paths: typeof path.posix): string {
+/** Returns the launcher found on PATH and its real path (symlinks resolved). */
+function findOnPath(name: string, deps: LauncherDeps, paths: typeof path.posix): { found: string; real: string } {
   for (const entry of deps.pathEnv.split(paths.delimiter)) {
     const dir = entry.replace(/^"(.*)"$/, '$1');
     if (!dir) continue;
     const candidate = paths.join(dir, name);
     try {
-      deps.realpath(candidate);
-      return candidate;
+      return { found: candidate, real: deps.realpath(candidate) };
     } catch {
       // not in this directory
     }
@@ -96,12 +96,17 @@ function windowsLauncher(found: string, deps: LauncherDeps): OrcaLauncher {
       break;
     }
     if (vars.ELECTRON && vars.CLI) {
-      const env: Record<string, string> = {
-        ELECTRON_RUN_AS_NODE: '1',
-        ORCA_APP_EXECUTABLE: vars.ELECTRON,
-        ORCA_APP_EXECUTABLE_NEEDS_APP_ROOT: '1',
-      };
+      // Mirrors orca.cmd. The runner merges over process.env and cannot unset: an empty value stands for `set NAME=`.
+      const env: Record<string, string> = { ELECTRON_RUN_AS_NODE: '1' };
+      if (deps.env.ORCA_APP_EXECUTABLE === undefined) {
+        env.ORCA_APP_EXECUTABLE = vars.ELECTRON;
+        env.ORCA_APP_EXECUTABLE_NEEDS_APP_ROOT = '1';
+      }
       if (vars.ORCA_USER_DATA_PATH) env.ORCA_USER_DATA_PATH = vars.ORCA_USER_DATA_PATH;
+      env.ORCA_NODE_OPTIONS = deps.env.NODE_OPTIONS ?? '';
+      env.ORCA_NODE_REPL_EXTERNAL_MODULE = deps.env.NODE_REPL_EXTERNAL_MODULE ?? '';
+      env.NODE_OPTIONS = '';
+      env.NODE_REPL_EXTERNAL_MODULE = '';
       return {
         cmd: vars.ELECTRON,
         args: [vars.CLI],
@@ -117,19 +122,20 @@ function windowsLauncher(found: string, deps: LauncherDeps): OrcaLauncher {
 
 /** Finds Orca's CLI launcher on PATH and works out how to run it on this platform. fs and env are injectable. */
 export function resolveOrcaLauncher(deps: Partial<LauncherDeps> = {}): OrcaLauncher {
+  const env = deps.env ?? process.env;
   const d: LauncherDeps = {
     platform: deps.platform ?? process.platform,
-    pathEnv: deps.pathEnv ?? process.env.PATH ?? process.env.Path ?? '',
-    pathExt: deps.pathExt ?? process.env.PATHEXT,
+    pathEnv: deps.pathEnv ?? env.PATH ?? env.Path ?? '',
+    env,
     readFile: deps.readFile ?? ((file) => readFileSync(file, 'utf8')),
     realpath: deps.realpath ?? ((file) => realpathSync(file)),
   };
   const paths = d.platform === 'win32' ? path.win32 : path.posix;
   const name = orcaCommandName(d.platform);
-  const found = findOnPath(name, d, paths);
+  const { found, real } = findOnPath(name, d, paths);
 
   if (d.platform === 'win32') return windowsLauncher(found, d);
-  if (d.platform === 'darwin') return { cmd: 'orca', args: [], runtimeClient: runtimeClientPath(d.realpath(found)) };
+  if (d.platform === 'darwin') return { cmd: 'orca', args: [], runtimeClient: runtimeClientPath(real) };
 
   let cli: string | undefined;
   try {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { HostError } from './errors';
 import { orcaCommandName, parseLauncherVars, resolveOrcaLauncher } from './orca-launcher';
 
@@ -100,11 +100,13 @@ describe('resolveOrcaLauncher', () => {
       { '/Applications/Orca.app/Contents/Resources/bin/orca': '#!/bin/bash' },
       { '/usr/local/bin/orca': '/Applications/Orca.app/Contents/Resources/bin/orca' },
     );
-    expect(resolveOrcaLauncher({ platform: 'darwin', pathEnv: '/usr/bin:/usr/local/bin', ...fs })).toEqual({
+    const realpath = vi.fn(fs.realpath);
+    expect(resolveOrcaLauncher({ platform: 'darwin', pathEnv: '/usr/bin:/usr/local/bin', ...fs, realpath })).toEqual({
       cmd: 'orca',
       args: [],
       runtimeClient: '/Applications/Orca.app/Contents/Resources/app.asar.unpacked/out/cli/runtime-client.js',
     });
+    expect(realpath.mock.calls.filter(([p]) => p === '/usr/local/bin/orca')).toHaveLength(1);
   });
 
   it('runs the Linux wrapper launcher directly, with the runtime client next to its CLI', () => {
@@ -137,6 +139,7 @@ describe('resolveOrcaLauncher', () => {
     const launcher = resolveOrcaLauncher({
       platform: 'win32',
       pathEnv: 'C:\\Windows\\System32;C:\\Users\\me\\AppData\\Local\\Programs\\Orca\\bin',
+      env: {},
       ...fs,
     });
     expect(launcher).toEqual({
@@ -147,9 +150,33 @@ describe('resolveOrcaLauncher', () => {
         ORCA_APP_EXECUTABLE: 'C:\\Users\\me\\AppData\\Local\\Programs\\Orca\\Orca.exe',
         ORCA_APP_EXECUTABLE_NEEDS_APP_ROOT: '1',
         ORCA_USER_DATA_PATH: 'C:\\Users\\me\\AppData\\Roaming\\Orca',
+        ORCA_NODE_OPTIONS: '',
+        ORCA_NODE_REPL_EXTERNAL_MODULE: '',
+        NODE_OPTIONS: '',
+        NODE_REPL_EXTERNAL_MODULE: '',
       },
       runtimeClient: 'C:\\Users\\me\\AppData\\Local\\Programs\\Orca\\resources\\app.asar.unpacked\\out\\cli\\runtime-client.js',
     });
+  });
+
+  it('moves NODE_OPTIONS / NODE_REPL_EXTERNAL_MODULE aside on Windows, as orca.cmd does', () => {
+    const fs = fakeFs({ 'C:\\Orca\\bin\\orca.cmd': winLauncher });
+    const env = { NODE_OPTIONS: '--max-old-space-size=4096', NODE_REPL_EXTERNAL_MODULE: 'C:\\Users\\me\\repl.js' };
+    const launcher = resolveOrcaLauncher({ platform: 'win32', pathEnv: 'C:\\Orca\\bin', env, ...fs });
+    expect(launcher.env).toMatchObject({
+      ORCA_NODE_OPTIONS: '--max-old-space-size=4096',
+      ORCA_NODE_REPL_EXTERNAL_MODULE: 'C:\\Users\\me\\repl.js',
+      NODE_OPTIONS: '',
+      NODE_REPL_EXTERNAL_MODULE: '',
+    });
+  });
+
+  it('keeps an ORCA_APP_EXECUTABLE already set on Windows, as orca.cmd does', () => {
+    const fs = fakeFs({ 'C:\\Orca\\bin\\orca.cmd': winLauncher });
+    const env = { ORCA_APP_EXECUTABLE: 'C:\\Other\\Orca.exe' };
+    const launcher = resolveOrcaLauncher({ platform: 'win32', pathEnv: 'C:\\Orca\\bin', env, ...fs });
+    expect(launcher.env).not.toHaveProperty('ORCA_APP_EXECUTABLE');
+    expect(launcher.env).not.toHaveProperty('ORCA_APP_EXECUTABLE_NEEDS_APP_ROOT');
   });
 
   it('follows ORCA_LAUNCHER forwarders on Windows', () => {
